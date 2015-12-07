@@ -1,5 +1,4 @@
-
-# Created by https://www.gitignore.io/api/latex,python,pycharm
+*.binary
 
 ### LaTeX ###
 *.acn
