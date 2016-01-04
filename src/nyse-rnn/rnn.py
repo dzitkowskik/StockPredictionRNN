@@ -31,15 +31,15 @@ def prepare_model(input_length, hidden_cnt):
 
     # try using different optimizers and different optimizer configs
     print('Compile model...')
-    model.compile(loss='binary_crossentropy',
-              optimizer='adam',
+    model.compile(loss='mean_squared_error',
+              optimizer='rmsprop',
               class_mode="binary")
     return model
 
 
 def main():
 
-    input_length = 100
+    input_length = 10
     hidden_cnt = 50
 
     x_train, y_train = prepare_data(input_length);

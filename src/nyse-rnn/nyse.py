@@ -1,10 +1,12 @@
 import struct
 import pymongo
-
+import pickle
+from os import listdir
+from os.path import isfile, join
 
 class NyseOpenBook(object):
     format_characteristics = '>iHi11s2hih2ci2B3ih4c3i'
-    records = []
+    symbols_dict = {}
 
     def __init__(self, name='unknown'):
         self.name = name
@@ -17,7 +19,7 @@ class NyseOpenBook(object):
 
     def add_record(self, record):
         if record.Volume > 0:
-            self.records.append(record)
+            self.symbols_dict.setdefault(record.Symbol,[]).append(record)
 
     def read_from_file(self, file_path, record_filter=(lambda x: True), max_rows=1000):
         with open(file_path, 'rb') as file:
@@ -39,26 +41,27 @@ class NyseOpenBook(object):
     def read_from_db(self, db, filter):
         results = db[self.name].find(filter)
         for result in results:
-            self.records.append(NyseOpenBookRecord.from_db_result(result))
+            record = NyseOpenBookRecord.from_db_result(result)
+            self.add_record(record)
 
     def save_to_db(self, db):
-        count = len(self.records)
         i = 0;
-        for record in self.records:
-            item = {
-                'symbol': record.Symbol,
-                'time': record.SourceTime,
-                'volume': record.Volume,
-                'price': record.Price,
-                'ChgQty': record.ChgQty,
-                'Side': record.Side
-            }
-
-            if i % 100000 == 0:
-                print('processed {}/{} items'.format(i, count))
-
-            db[self.name].save(item)
-            i += 1
+        for list in self.symbols_dict.itervalues():
+            for record in list:
+                item = {
+                    'symbol': record.Symbol,
+                    'time': record.SourceTime,
+                    'volume': record.Volume,
+                    'price': record.Price,
+                    'ChgQty': record.ChgQty,
+                    'Side': record.Side
+                }
+    
+                if i % 100000 == 0:
+                    print('processed {} items'.format(i))
+    
+                db[self.name].save(item)
+                i += 1
 
     def print_records(self):
         print('|{:^10}|{:^10}|{:^10}|{:^10}|{:^10}|'.format('SYM', 'TIME', 'VOLUME', 'PRICE', 'SIDE'))
@@ -69,16 +72,30 @@ class NyseOpenBook(object):
         gap += '|'
         print(gap)
 
-        for rec in self.records:
-            print(rec)
+        for list in self.symbols_dict.itervalues():
+            for record in list:
+                print(record)
 
     def getXY(self):
         X = []
         y = []
-        for record in self.records:
-            X.append(record.getX())
-            y.append(record.getY())
+        for list in self.symbols_dict.itervalues():
+            for record in list:
+                X.append(record.getX())
+                y.append(record.getY())
         return X, y
+
+    def pickle_to_file(self, filename):
+        output = open('symbols//' + filename, 'wb')
+        pickle.dump(self.symbols_dict[filename], output)
+        output.close()
+        
+    def pickle_from_file(self, filename):
+        self.name = filename
+        input = open('symbols//' + filename, 'rb')
+        list = pickle.load(input)
+        self.symbols_dict.setdefault(filename, list)
+        input.close()
 
 
 class NyseOpenBookRecord(object):
@@ -132,23 +149,31 @@ class NyseOpenBookRecord(object):
 def getTestData():
     book = NyseOpenBook("test")
     db_client = pymongo.MongoClient('localhost', 27017)
-    book.read_from_db(db_client['nyse'], {'symbol': 'LNG'})
+    book.read_from_db(db_client['nyse'], {'symbol': 'PIP'})
     return book
 
 
 def main():
     book = NyseOpenBook("test")
     # filename = 'bigFile.binary'
+    filename = 'openbookultraAZ_A20130403_1_of_1'
     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
-    # record_filter = (lambda x: 'CUR' in x.Symbol)
-    # record_filter = (lambda x: True)
-    # book.read_from_file(filename, record_filter, 0)
+    # record_filter = (lambda x: 'PIP' in x.Symbol)
+    record_filter = (lambda x: True)
+    book.read_from_file(filename, record_filter, 5000)
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
-    # book.save_to_db(db_client['nyse'])
-
+    book.save_to_db(db_client['nyse'])
+      
+    for list in book.symbols_dict.itervalues():
+        book.pickle_to_file(list[0].Symbol)
+     
+    symbols = [f for f in listdir("symbols") if isfile(join('symbols', f))]
+    
+    book.symbols_dict = {}
+    book.pickle_from_file('PIP')
     # db.test.aggregate({$group: {_id : "$symbol", count: {$sum : 1}}}, { $sort: {count: -1} });
-    book.read_from_db(db_client['nyse'], {'symbol': 'LNG'})
+    # book.read_from_db(db_client['nyse'], {'symbol': 'PIP'})
     book.print_records()
 
 if __name__ == '__main__':
