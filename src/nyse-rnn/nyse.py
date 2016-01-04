@@ -21,7 +21,7 @@ class NyseOpenBook(object):
         if record.Volume > 0:
             self.symbols_dict.setdefault(record.Symbol,[]).append(record)
 
-    def read_from_file(self, file_path, record_filter=(lambda x: True), max_rows=1000):
+    def read_from_file(self, file_path, record_filter=(lambda x: True), max_rows=10000):
         with open(file_path, 'rb') as file:
             binary_record = file.read(69)
             i = 0
@@ -145,35 +145,91 @@ class NyseOpenBookRecord(object):
         empty_record.Side = result['Side']
         return empty_record
 
+class NyseOrderBook(object):
+    buy_orders = []
+    sell_orders = []
+
+    def __init__(self, name='unknown'):
+        self.name = name
+
+    def process_order(self, order):
+        if order.Side == 'B':
+            while order.Volume > 0:
+                if self.sell_orders:
+                    if self.sell_orders[0].Price <= order.Price:
+                        if self.sell_orders[0].Volume <= order.Volume:
+                            order.Volume -= self.sell_orders.pop(0).Volume
+                        elif self.sell_orders[0].Volume > order.Volume:
+                            self.sell_orders[0].Volume -= order.Volume
+                            order.Volume = 0
+                    else:
+                        self.buy_orders.insert(0, order)
+                        self.buy_orders.sort(key=lambda x: x.SourceTime, reverse=False)
+                        self.buy_orders.sort(key=lambda x: x.Price, reverse=True)
+                        break
+                else:
+                    self.buy_orders.insert(0, order)
+                    break
+        elif order.Side == 'S':
+            while order.Volume > 0:
+                if self.buy_orders:
+                    if self.buy_orders[0].Price >= order.Price:
+                        if self.buy_orders[0].Volume <= order.Volume:
+                            order.Volume -= self.buy_orders.pop(0).Volume
+                        elif self.buy_orders[0].Volume > order.Volume:
+                            self.buy_orders[0].Volume -= order.Volume
+                            order.Volume = 0
+                    else:
+                        self.sell_orders.insert(0, order)
+                        self.sell_orders.sort(key=lambda x: x.SourceTime, reverse=False)
+                        self.sell_orders.sort(key=lambda x: x.Price, reverse=False)
+                        break
+                else:
+                    self.sell_orders.insert(0, order)
+                    break
+
+    def midprice(self):
+        midprice = 0.0
+        if self.sell_orders & self.buy_orders:
+            midprice = (self.sell_orders[0] + self.buy_orders[0]) / 2
+            
+        return midprice
+
 
 def getTestData():
     book = NyseOpenBook("test")
     db_client = pymongo.MongoClient('localhost', 27017)
-    book.read_from_db(db_client['nyse'], {'symbol': 'PIP'})
+    book.read_from_db(db_client['nyse'], {'symbol': 'AA'})
     return book
 
 
 def main():
     book = NyseOpenBook("test")
     # filename = 'bigFile.binary'
-    filename = 'openbookultraAZ_A20130403_1_of_1'
+    filename = 'openbookultraAA_N20130403_1_of_1'
     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
-    # record_filter = (lambda x: 'PIP' in x.Symbol)
+    # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)
-    book.read_from_file(filename, record_filter, 5000)
+    # record_filter = (lambda x: 'C' in x.ReasonCode)
+    book.read_from_file(filename, record_filter, 10000)
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
     book.save_to_db(db_client['nyse'])
-      
+       
     for list in book.symbols_dict.itervalues():
         book.pickle_to_file(list[0].Symbol)
-     
+      
     symbols = [f for f in listdir("symbols") if isfile(join('symbols', f))]
-    
+     
     book.symbols_dict = {}
-    book.pickle_from_file('PIP')
+    book.pickle_from_file('AA')
     # db.test.aggregate({$group: {_id : "$symbol", count: {$sum : 1}}}, { $sort: {count: -1} });
-    # book.read_from_db(db_client['nyse'], {'symbol': 'PIP'})
+    # book.read_from_db(db_client['nyse'], {'symbol': 'AZN'})
+    # book.print_records()
+    order_book = NyseOrderBook("AA")
+    for list in book.symbols_dict.itervalues():
+        for order in list:
+            order_book.process_order(order)
     book.print_records()
 
 if __name__ == '__main__':
