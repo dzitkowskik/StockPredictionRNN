@@ -4,6 +4,7 @@ from keras.layers.recurrent import LSTM
 from keras.utils import np_utils
 import numpy as np
 from nyse import *
+from keras.optimizers import SGD
 
 
 def prepare_data(input_length):
@@ -14,7 +15,7 @@ def prepare_data(input_length):
     y_temp = []
     for i in range(len(x)-input_length):
         x_temp.append(x[i:(i+input_length)])
-        y_temp.append(y[input_length])
+        y_temp.append(y[i+input_length])
 
     x = np.array(x_temp)
     y = np_utils.to_categorical(y_temp, 3)
@@ -32,18 +33,19 @@ def prepare_model(input_length, hidden_cnt):
 
     # try using different optimizers and different optimizer configs
     print('Compile model...')
-    model.compile(loss='categorical_crossentropy',
-              optimizer='rmsprop',
-              class_mode="categorical")
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd)
     return model
 
 
 def main():
-
     input_length = 100
     hidden_cnt = 50
 
-    x_train, y_train = prepare_data(input_length);
+    x_train, y_train = prepare_data(input_length)
+    print("{0} records with price down".format(sum(y_train[:, 0])))
+    print("{0} records with price stable".format(sum(y_train[:, 1])))
+    print("{0} records with price down".format(sum(y_train[:, 2])))
     model = prepare_model(input_length, hidden_cnt)
 
     # print(x_train)
@@ -52,9 +54,18 @@ def main():
     print('y_train shape:', y_train.shape)
 
     print("Train...")
-    model.fit(x_train, y_train, validation_split=0.1, batch_size=32, nb_epoch=10, show_accuracy=True)
-    y_pred = model.predict(x_train)
-    print(y_pred.flatten())
+    model.fit(x_train, y_train, validation_split=0.5, batch_size=128, nb_epoch=3, show_accuracy=True)
+    y_pred = np_utils.probas_to_classes(model.predict(x_train))
+    y_train = np_utils.probas_to_classes(y_train)
+    print("PREDICTED: class 0: {0}, class 1: {1}, class 2: {2}".format(
+          np.sum(np.ravel(y_pred) == 0),
+          np.sum(np.ravel(y_pred) == 1),
+          np.sum(np.ravel(y_pred) == 2)))
+    print("ACTUAL: class 0: {0}, class 1: {1}, class 2: {2}".format(
+          np.sum(np.ravel(y_train) == 0),
+          np.sum(np.ravel(y_train) == 1),
+          np.sum(np.ravel(y_train) == 2)))
+    print("ERROR RATE: ", (np.ravel(y_pred) != np.ravel(y_train)).sum().astype(float)/y_train.shape[0])
 
 if __name__ == '__main__':
     main()

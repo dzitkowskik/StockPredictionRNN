@@ -301,12 +301,12 @@ def getTestData():
 def main():
     book = NyseOpenBook("test")
     # filename = 'bigFile.binary'
-    filename = 'openbookultraAA_N20130403_1_of_1'
+    filename = '/media/ghash/OTHER/Dane/EQY_US_NYSE_BOOK_20130403/openbookultraAA_N20130403_1_of_1'
     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
     # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)
     # record_filter = (lambda x: 'C' in x.ReasonCode)
-    book.read_from_file(filename, record_filter, 100000)
+    book.read_from_file(filename, record_filter, 1000000)
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
     book.save_to_db(db_client['nyse'])
