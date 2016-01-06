@@ -9,8 +9,9 @@ from keras.optimizers import SGD
 
 
 class RNN:
-    def __init__(self, input_length, hidden_cnt, input_dim=9):
+    def __init__(self, input_length, hidden_cnt, input_dim=9, output_dim=3):
         self.input_dim = input_dim
+        self.output_dim = output_dim
         self.input_length = input_length
         self.hidden_cnt = hidden_cnt
         self.model = self.__prepare_model()
@@ -24,7 +25,7 @@ class RNN:
                        return_sequences=False))
         model.add(Dropout(0.1))
         model.add(Dense(self.hidden_cnt, activation='sigmoid'))
-        model.add(Dense(3))
+        model.add(Dense(self.output_dim))
         model.add(Activation('softmax'))
 
         # try using different optimizers and different optimizer configs
@@ -42,7 +43,7 @@ class RNN:
             y_temp.append(y[i+self.input_length])
 
         x = np.array(x_temp)
-        y = np_utils.to_categorical(y_temp, 3)
+        y = np_utils.to_categorical(y_temp, self.output_dim)
 
         print("{0} records with price down".format(sum(y[:, 0])))
         print("{0} records with price stable".format(sum(y[:, 1])))

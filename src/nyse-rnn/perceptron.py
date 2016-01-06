@@ -1,64 +1,78 @@
-from keras.models import Graph
-from keras.layers.core import Dense
-import numpy as np
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout, Activation
 from nyse import *
+from nn import *
+from keras.optimizers import SGD
+# import theano
+# theano.compile.mode.Mode(linker='py', optimizer='fast_compile')
 
 
-def prepare_data(input_length):
-    book = getTestData()
-    x, y = book.getXY()
+class MLP:
+    def __init__(self, input_length, hidden_cnt, input_dim=9, output_dim=3):
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.input_length = input_length
+        self.hidden_cnt = hidden_cnt
+        self.model = self.__prepare_model()
 
-    x_temp = []
-    y_temp = []
-    for i in range(len(x)-input_length):
-        x_temp.append(x[i:(i+input_length)])
-        y_temp.append(1 if y[i+input_length-1] < y[i+input_length] else 0)
+    def __prepare_model(self):
+        print('Build model...')
+        model = Sequential()
+        model.add(Dense(self.hidden_cnt, input_dim=self.input_dim, init='uniform', activation='sigmoid'))
+        model.add(Dropout(0.5))
+        model.add(Dense(self.hidden_cnt, init='uniform', activation='sigmoid'))
+        model.add(Dropout(0.5))
+        model.add(Dense(self.output_dim, init='uniform', activation='softmax'))
 
-    x = np.array(x_temp)
-    y = np.array(y_temp)
-    return x, y
+        # try using different optimizers and different optimizer configs
+        print('Compile model...')
+        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+        model.compile(loss='categorical_crossentropy', optimizer=sgd)
+        return model
 
+    def prepare_data(self, book):
+        x, y = book.getXY()
+        x_temp = []
+        y_temp = []
+        for i in range(len(x)-self.input_length):
+            x_temp.append(x[i:(i+self.input_length)])
+            y_temp.append(y[i+self.input_length])
 
-def prepare_model(input_length, hidden_cnt):
-    print('Build model...')
-    model = Graph()
-    inputs = []
-    for i in range(input_length):
-        model.add_input(name='input'+str(i), input_shape=(4,))
-        model.add_node(Dense(4), name='dense'+str(i), input='input'+str(i))
-        inputs.append('dense'+str(i))
-    # print(inputs, 'inputs')
-    model.add_node(Dense(hidden_cnt, activation='sigmoid'), name='denseMerge', inputs=inputs)
-    model.add_node(Dense(1, activation='softmax'), name='output', input='denseMerge', create_output=True)
+        x = np.array(x_temp)
+        y = np_utils.to_categorical(y_temp, self.output_dim)
 
-    print('Compile model...')
-    model.compile(optimizer='adam', loss={'output': 'binary_crossentropy'})
-    return model
+        print("{0} records with price down".format(sum(y[:, 0])))
+        print("{0} records with price stable".format(sum(y[:, 1])))
+        print("{0} records with price down".format(sum(y[:, 2])))
+        print('x shape:', x.shape)
+        print('y shape:', y.shape)
+
+        return Data(x, y)
+
+    def change_input_dim(self, input_dim):
+        self.input_dim = input_dim
+        self.model = self.__prepare_model()
+
+    def get_model(self):
+        return self.model
 
 
 def main():
+    book = getTestData()
 
     input_length = 100
     hidden_cnt = 50
-
-    x_train, y_train = prepare_data(input_length);
-    model = prepare_model(input_length, hidden_cnt)
-
-    # print(x_train)
-    # print(y_train)
-    print('x_train shape:', x_train.shape)
-    print('y_train shape:', y_train.shape)
-
-    print("Train...")
-    inputs = {}
-    for i in range(input_length):
-        inputs['input'+str(i)] = x_train[:, i, :].reshape((x_train.shape[0], x_train.shape[2]))
-        # print('input shape: ', inputs['input'+str(i)].shape)
-    inputs['output'] = y_train
-
-    history = model.fit(inputs, nb_epoch=10)
-    y_pred = model.predict(inputs)
-    print(y_pred)
+    nn = NeuralNetwork(MLP(input_length, hidden_cnt))
+    data = nn.nn.prepare_data(book)
+    print("TRAIN")
+    nn.train(data)
+    print("TEST")
+    nn.test(data)
+    print("TRAIN WITH CROSS-VALIDATION")
+    nn.run_with_cross_validation(data, 2)
+    print("FEATURE SELECTION")
+    features = nn.feature_selection(data)
+    print("Selected features: {0}".format(features))
 
 if __name__ == '__main__':
     main()
