@@ -1,71 +1,81 @@
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.recurrent import LSTM
-from keras.utils import np_utils
-import numpy as np
 from nyse import *
+from nn import *
 from keras.optimizers import SGD
+# import theano
+# theano.compile.mode.Mode(linker='py', optimizer='fast_compile')
 
 
-def prepare_data(input_length):
-    book = getTestData()
-    x, y = book.getXY()
+class RNN:
+    def __init__(self, input_length, hidden_cnt, input_dim=9):
+        self.input_dim = input_dim
+        self.input_length = input_length
+        self.hidden_cnt = hidden_cnt
+        self.model = self.__prepare_model()
 
-    x_temp = []
-    y_temp = []
-    for i in range(len(x)-input_length):
-        x_temp.append(x[i:(i+input_length)])
-        y_temp.append(y[i+input_length])
+    def __prepare_model(self):
+        print('Build model...')
+        model = Sequential()
+        model.add(LSTM(output_dim=self.hidden_cnt,
+                       input_dim=self.input_dim,
+                       input_length=self.input_length,
+                       return_sequences=False))
+        model.add(Dropout(0.1))
+        model.add(Dense(self.hidden_cnt, activation='sigmoid'))
+        model.add(Dense(3))
+        model.add(Activation('softmax'))
 
-    x = np.array(x_temp)
-    y = np_utils.to_categorical(y_temp, 3)
-    return x, y
+        # try using different optimizers and different optimizer configs
+        print('Compile model...')
+        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+        model.compile(loss='categorical_crossentropy', optimizer=sgd)
+        return model
 
+    def prepare_data(self, book):
+        x, y = book.getXY()
+        x_temp = []
+        y_temp = []
+        for i in range(len(x)-self.input_length):
+            x_temp.append(x[i:(i+self.input_length)])
+            y_temp.append(y[i+self.input_length])
 
-def prepare_model(input_length, hidden_cnt):
-    print('Build model...')
-    model = Sequential()
-    model.add(LSTM(output_dim=hidden_cnt, input_dim=9, input_length=input_length, return_sequences=False))
-    model.add(Dropout(0.1))
-    model.add(Dense(hidden_cnt, activation='sigmoid'))
-    model.add(Dense(3))
-    model.add(Activation('softmax'))
+        x = np.array(x_temp)
+        y = np_utils.to_categorical(y_temp, 3)
 
-    # try using different optimizers and different optimizer configs
-    print('Compile model...')
-    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='categorical_crossentropy', optimizer=sgd)
-    return model
+        print("{0} records with price down".format(sum(y[:, 0])))
+        print("{0} records with price stable".format(sum(y[:, 1])))
+        print("{0} records with price down".format(sum(y[:, 2])))
+        print('x shape:', x.shape)
+        print('y shape:', y.shape)
+
+        return Data(x, y)
+
+    def change_input_dim(self, input_dim):
+        self.input_dim = input_dim
+        self.model = self.__prepare_model()
+
+    def get_model(self):
+        return self.model
 
 
 def main():
+    book = getTestData()
+
     input_length = 100
     hidden_cnt = 50
-
-    x_train, y_train = prepare_data(input_length)
-    print("{0} records with price down".format(sum(y_train[:, 0])))
-    print("{0} records with price stable".format(sum(y_train[:, 1])))
-    print("{0} records with price down".format(sum(y_train[:, 2])))
-    model = prepare_model(input_length, hidden_cnt)
-
-    # print(x_train)
-    # print(y_train)
-    print('x_train shape:', x_train.shape)
-    print('y_train shape:', y_train.shape)
-
-    print("Train...")
-    model.fit(x_train, y_train, validation_split=0.5, batch_size=128, nb_epoch=3, show_accuracy=True)
-    y_pred = np_utils.probas_to_classes(model.predict(x_train))
-    y_train = np_utils.probas_to_classes(y_train)
-    print("PREDICTED: class 0: {0}, class 1: {1}, class 2: {2}".format(
-          np.sum(np.ravel(y_pred) == 0),
-          np.sum(np.ravel(y_pred) == 1),
-          np.sum(np.ravel(y_pred) == 2)))
-    print("ACTUAL: class 0: {0}, class 1: {1}, class 2: {2}".format(
-          np.sum(np.ravel(y_train) == 0),
-          np.sum(np.ravel(y_train) == 1),
-          np.sum(np.ravel(y_train) == 2)))
-    print("ERROR RATE: ", (np.ravel(y_pred) != np.ravel(y_train)).sum().astype(float)/y_train.shape[0])
+    nn = NeuralNetwork(RNN(input_length, hidden_cnt))
+    data = nn.nn.prepare_data(book)
+    print("TRAIN")
+    nn.train(data)
+    print("TEST")
+    nn.test(data)
+    print("TRAIN WITH CROSS-VALIDATION")
+    nn.run_with_cross_validation(data, 2)
+    print("FEATURE SELECTION")
+    features = nn.feature_selection(data)
+    print("Selected features: {0}".format(features))
 
 if __name__ == '__main__':
     main()

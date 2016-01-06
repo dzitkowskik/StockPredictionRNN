@@ -306,7 +306,7 @@ def main():
     # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)
     # record_filter = (lambda x: 'C' in x.ReasonCode)
-    book.read_from_file(filename, record_filter, 1000000)
+    book.read_from_file(filename, record_filter, 10000)
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
     book.save_to_db(db_client['nyse'])
