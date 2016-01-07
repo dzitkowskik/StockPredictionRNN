@@ -4,6 +4,7 @@ import pickle
 from os import listdir
 from os.path import isfile, join
 
+
 class NyseOpenBook(object):
     format_characteristics = '>iHi11s2hih2ci2B3ih4c3i'
     symbols_dict = {}
@@ -144,6 +145,7 @@ class NyseOpenBookRecord(object):
         empty_record.ChgQty = result['ChgQty']
         empty_record.Side = result['Side']
         return empty_record
+
 
 class NyseOrderBook(object):
     buy_orders = []
@@ -286,7 +288,7 @@ class NyseOrderBook(object):
         return self.X, self.y  
     
     
-def getTestData():
+def get_test_data():
     book = NyseOpenBook("test")
     book.pickle_from_file('AIG')
     

@@ -62,7 +62,7 @@ class MLP:
 
 
 def main():
-    book = getTestData()
+    book = get_test_data()
 
     input_length = 100
     hidden_cnt = 50
