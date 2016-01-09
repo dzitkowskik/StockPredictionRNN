@@ -1,12 +1,7 @@
 from keras.utils import np_utils
 from sklearn import cross_validation
 import numpy as np
-
-
-class Data:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+from nyse import Data
 
 
 class NeuralNetwork:
@@ -78,10 +73,7 @@ class NeuralNetwork:
 
     def feature_selection(self, data):
         # N - number of observations, T - number of time points, M - number of features
-        if len(data.x.shape) == 3:
-            N, T, M = data.x.shape
-        else:
-            N, M = data.x.shape
+        N, T, M = data.x.shape
         print("M = {0}".format(M))
         best_err_rate = 1
         available_features = range(M)
@@ -95,10 +87,7 @@ class NeuralNetwork:
                 current_feature_set = list(selected_features)
                 current_feature_set.append(feature)
                 print("current feature set = {0}".format(current_feature_set))
-                if len(data.x.shape) == 3:
-                    train_errors, test_errors = self.__run_with_cross_validation(data.x[:, :, current_feature_set], data.y, 4)
-                else:
-                    train_errors, test_errors = self.__run_with_cross_validation(data.x[:, current_feature_set], data.y, 4)
+                train_errors, test_errors = self.__run_with_cross_validation(data.x[:, :, current_feature_set], data.y, 4)
                 error = np.average(test_errors)
                 if error < best_err_rate:
                     best_err_rate = error

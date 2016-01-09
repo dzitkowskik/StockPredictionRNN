@@ -25,33 +25,13 @@ class MLP:
         model.add(TimeDistributedMerge(mode='ave'))
         model.add(Dropout(0.1))
         model.add(Dense(self.hidden_cnt, activation='sigmoid'))
-        model.add(Dense(self.output_dim))
-        model.add(Activation('softmax'))
+        model.add(Dense(self.output_dim, activation='softmax'))
 
         # try using different optimizers and different optimizer configs
         print('Compile model...')
         sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         model.compile(loss='categorical_crossentropy', optimizer=sgd)
         return model
-
-    def prepare_data(self, book):
-        x, y = book.getXY()
-        x_temp = []
-        y_temp = []
-        for i in range(len(x)-self.input_length):
-            x_temp.append(x[i:(i+self.input_length)])
-            y_temp.append(y[i+self.input_length])
-
-        x = np.array(x_temp)
-        y = np_utils.to_categorical(y_temp, self.output_dim)
-
-        print("{0} records with price down".format(sum(y[:, 0])))
-        print("{0} records with price stable".format(sum(y[:, 1])))
-        print("{0} records with price down".format(sum(y[:, 2])))
-        print('x shape:', x.shape)
-        print('y shape:', y.shape)
-
-        return Data(x, y)
 
     def change_input_dim(self, input_dim):
         self.input_dim = input_dim
@@ -62,12 +42,11 @@ class MLP:
 
 
 def main():
-    book = get_test_data()
-
     input_length = 100
     hidden_cnt = 50
+    
     nn = NeuralNetwork(MLP(input_length, hidden_cnt))
-    data = nn.nn.prepare_data(book)
+    data = get_test_data(input_length)
     print("TRAIN")
     nn.train(data)
     print("TEST")

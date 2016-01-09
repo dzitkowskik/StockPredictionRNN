@@ -2,7 +2,12 @@ import struct
 import pymongo
 import pickle
 import numpy as np
+from keras.utils import np_utils
 
+class Data:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 class NyseOpenBook(object):
     format_characteristics = '>iHi11s2hih2ci2B3ih4c3i'
@@ -136,7 +141,7 @@ class NyseOrderBook(object):
     sell_orders = []
     
     X = []
-    y = []
+    Y = []
     
     prev_order = None
     prev_buy = None
@@ -216,7 +221,7 @@ class NyseOrderBook(object):
         self.prev_order = order
         
         self.X.append(self.getX())
-        self.y.append(self.getY())
+        self.Y.append(self.getY())
         
         self.prev_transaction_price = self.transaction_price
         
@@ -269,12 +274,10 @@ class NyseOrderBook(object):
         return y
     
     def getXY(self):
-        return self.get_balanced_subsample()
+        return self.X, self.Y
     
-    def get_balanced_subsample(self, subsample_size=1.0):
-        x=np.array(self.X)
-        y=self.y
-        
+    
+def get_balanced_subsample(x, y, subsample_size=1.0):
         class_xs = []
         min_elems = None
     
@@ -302,12 +305,35 @@ class NyseOrderBook(object):
             xs.append(x_)
             ys.append(y_)
     
-        xs = np.concatenate(xs).tolist()
+        xs = np.concatenate(xs)
         ys = np.concatenate(ys)
     
         return xs, ys
     
-def get_test_data():
+def prepare_data(book, window_size):
+    x, y = book.getXY()
+    x_temp = []
+    y_temp = []
+    for i in range(len(x)-window_size):
+        x_temp.append(x[i:(i+window_size)])
+        y_temp.append(y[i+window_size])
+
+    x = np.array(x_temp)
+    y = y_temp
+    
+    x, y = get_balanced_subsample(x, y)
+    
+    y = np_utils.to_categorical(y, 3)
+
+    print("{0} records with price down".format(sum(y[:, 0])))
+    print("{0} records with price stable".format(sum(y[:, 1])))
+    print("{0} records with price down".format(sum(y[:, 2])))
+    print('x shape:', x.shape)
+    print('y shape:', y.shape)
+
+    return Data(x, y)
+
+def get_test_data(window_size):
     book = NyseOpenBook("test")
     book.pickle_from_file('AIG')
     
@@ -316,7 +342,7 @@ def get_test_data():
         for order in list:
             order_book.process_order(order)
             
-    return order_book
+    return prepare_data(order_book, window_size)
 
 
 def main():
@@ -331,10 +357,10 @@ def main():
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
     book.save_to_db(db_client['nyse'])
-    
+     
     for list in book.symbols_dict.itervalues():
         book.pickle_to_file(list[0].Symbol)
-     
+    
     book.symbols_dict = {}
     book.pickle_from_file('AIG')
     # db.test.aggregate({$group: {_id : "$symbol", count: {$sum : 1}}}, { $sort: {count: -1} });

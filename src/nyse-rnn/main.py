@@ -7,18 +7,18 @@ import numpy as np
 
 
 def main():
-    book = get_test_data()
-
     input_length = 100
     hidden_cnt = 50
     cross_validation_passes = 10
 
+    data = get_test_data(input_length)
+    
     print("----------------------------------------------------------------------")
     print("TRAIN RNN")
     print("----------------------------------------------------------------------")
 
     rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt))
-    rnn_data = rnn_nn.nn.prepare_data(book)
+    rnn_data = data
     rnn_errors_train, rnn_errors_tst = rnn_nn.run_with_cross_validation(rnn_data, cross_validation_passes)
 
     print("----------------------------------------------------------------------")
@@ -31,7 +31,7 @@ def main():
     print("----------------------------------------------------------------------")
 
     mlp_nn = nn.NeuralNetwork(perceptron.MLP(input_length, hidden_cnt))
-    mlp_data = mlp_nn.nn.prepare_data(book)
+    mlp_data = data
     mlp_errors_train, mlp_errors_tst = mlp_nn.run_with_cross_validation(mlp_data, cross_validation_passes)
 
     print("----------------------------------------------------------------------")
