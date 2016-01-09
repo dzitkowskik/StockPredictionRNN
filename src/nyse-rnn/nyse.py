@@ -1,8 +1,7 @@
 import struct
 import pymongo
 import pickle
-from os import listdir
-from os.path import isfile, join
+import numpy as np
 
 
 class NyseOpenBook(object):
@@ -77,15 +76,6 @@ class NyseOpenBook(object):
             for record in list:
                 print(record)
 
-    def getXY(self):
-        X = []
-        y = []
-        for list in self.symbols_dict.itervalues():
-            for record in list:
-                X.append(record.getX())
-                y.append(record.getY())
-        return X, y
-
     def pickle_to_file(self, filename):
         output = open('symbols//' + filename, 'wb')
         pickle.dump(self.symbols_dict[filename], output)
@@ -129,12 +119,6 @@ class NyseOpenBookRecord(object):
         result += '|'
         return result
 
-    def getX(self):
-        return [self.Volume, self.Price, self.SourceTime, 0 if self.Side == 'S' else 1]
-
-    def getY(self):
-        return self.Price
-
     @classmethod
     def from_db_result(cls, result):
         empty_record = cls()
@@ -175,17 +159,17 @@ class NyseOrderBook(object):
         self.name = name
 
     def process_order(self, order):
-        self.order_volume = order.Volume
+        remaining_volume = order.Volume
         
         if order.Side == 'B':
-            while order.Volume > 0:
+            while remaining_volume > 0:
                 if self.sell_orders:
                     if self.sell_orders[0].Price <= order.Price:
-                        if self.sell_orders[0].Volume <= order.Volume:
-                            order.Volume -= self.sell_orders.pop(0).Volume
-                        elif self.sell_orders[0].Volume > order.Volume:
-                            self.sell_orders[0].Volume -= order.Volume
-                            order.Volume = 0
+                        if self.sell_orders[0].Volume <= remaining_volume:
+                            remaining_volume -= self.sell_orders.pop(0).Volume
+                        else:
+                            self.sell_orders[0].Volume -= remaining_volume
+                            remaining_volume = 0
                         self.transaction_price = order.Price
                     else:
                         self.buy_orders.append(order)
@@ -195,14 +179,14 @@ class NyseOrderBook(object):
                     self.buy_orders.append(order)
                     break
         elif order.Side == 'S':
-            while order.Volume > 0:
+            while remaining_volume > 0:
                 if self.buy_orders:
                     if self.buy_orders[0].Price >= order.Price:
-                        if self.buy_orders[0].Volume <= order.Volume:
-                            order.Volume -= self.buy_orders.pop(0).Volume
-                        elif self.buy_orders[0].Volume > order.Volume:
-                            self.buy_orders[0].Volume -= order.Volume
-                            order.Volume = 0
+                        if self.buy_orders[0].Volume <= remaining_volume:
+                            remaining_volume -= self.buy_orders.pop(0).Volume
+                        else:
+                            self.buy_orders[0].Volume -= remaining_volume
+                            remaining_volume = 0
                         self.transaction_price = order.Price
                     else:
                         self.sell_orders.append(order)
@@ -211,11 +195,13 @@ class NyseOrderBook(object):
                 else:
                     self.sell_orders.append(order)
                     break
+                
         self.update_history(order)
         
     def update_history(self, order):
         self.order_side = 0 if order.Side == 'S' else 1
         self.order_price = order.Price
+        self.order_volume = order.Volume
         self.time_since_prev_order = self.get_time_since_order(order)
         self.mid_price = self.get_mid_price()
         self.sell_price_diff = self.get_sell_price_diff(order)
@@ -278,15 +264,48 @@ class NyseOrderBook(object):
         y = 1
         if self.transaction_price < self.prev_transaction_price:
             y = 0
-        elif self.transaction_price == self.prev_transaction_price:
-            y = 1
         elif self.transaction_price > self.prev_transaction_price:
             y = 2
         return y
     
     def getXY(self):
-        return self.X, self.y  
+        return self.get_balanced_subsample()
     
+    def get_balanced_subsample(self, subsample_size=1.0):
+        x=np.array(self.X)
+        y=self.y
+        
+        class_xs = []
+        min_elems = None
+    
+        for yi in np.unique(y):
+            elems = x[(y == yi)]
+            class_xs.append((yi, elems))
+            if min_elems == None or elems.shape[0] < min_elems:
+                min_elems = elems.shape[0]
+    
+        use_elems = min_elems
+        if subsample_size < 1:
+            use_elems = int(min_elems*subsample_size)
+    
+        xs = []
+        ys = []
+    
+        for ci,this_xs in class_xs:
+            if len(this_xs) > use_elems:
+                np.random.shuffle(this_xs)
+    
+            x_ = this_xs[:use_elems]
+            y_ = np.empty(use_elems)
+            y_.fill(ci)
+    
+            xs.append(x_)
+            ys.append(y_)
+    
+        xs = np.concatenate(xs).tolist()
+        ys = np.concatenate(ys)
+    
+        return xs, ys
     
 def get_test_data():
     book = NyseOpenBook("test")
@@ -312,11 +331,9 @@ def main():
     # book.print_records()
     db_client = pymongo.MongoClient('localhost', 27017)
     book.save_to_db(db_client['nyse'])
-          
+    
     for list in book.symbols_dict.itervalues():
         book.pickle_to_file(list[0].Symbol)
-         
-    symbols = [f for f in listdir("symbols") if isfile(join('symbols', f))]
      
     book.symbols_dict = {}
     book.pickle_from_file('AIG')
