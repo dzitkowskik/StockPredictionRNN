@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 
 
 class MLP:
-    def __init__(self, input_length, hidden_cnt, input_dim=9, output_dim=3):
+    def __init__(self, input_length, hidden_cnt, input_dim=30, output_dim=3):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.input_length = input_length
@@ -23,8 +23,8 @@ class MLP:
                                        input_length=self.input_length,
                                        activation='sigmoid'))
         model.add(TimeDistributedMerge(mode='ave'))
-        model.add(Dropout(0.1))
-        model.add(Dense(self.hidden_cnt, activation='sigmoid'))
+        model.add(Dense(self.hidden_cnt, activation='tanh'))
+        model.add(Dropout(0.5))
         model.add(Dense(self.output_dim, activation='softmax'))
 
         # try using different optimizers and different optimizer configs

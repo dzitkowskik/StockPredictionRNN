@@ -97,22 +97,22 @@ class NyseOpenBook(object):
 class NyseOpenBookRecord(object):
     def __init__(self, data=None):
         if data:
-            self.MsgSeqNum = data[0]
-            self.MsgType = data[1]
-            self.SendTime = data[2]
+#             self.MsgSeqNum = data[0]
+#             self.MsgType = data[1]
+#             self.SendTime = data[2]
             self.Symbol = str(data[3].partition(b'\0')[0].decode('utf8'))
-            self.MsgSize = data[4]
-            self.SecurityIndex = data[5]
+#             self.MsgSize = data[4]
+#             self.SecurityIndex = data[5]
             self.SourceTime = data[6] * 1000 + data[7]
-            self.QuoteCondition = data[8]
-            self.TradingStatus = data[9]
-            self.SourceSeqNum = data[10]
-            self.SourceSessionID = data[11]
+#             self.QuoteCondition = data[8]
+#             self.TradingStatus = data[9]
+#             self.SourceSeqNum = data[10]
+#             self.SourceSessionID = data[11]
             self.Price = float(data[13]) / (10.0 ** data[12])
             self.Volume = data[14]
-            self.ChgQty = data[15]
+#             self.ChgQty = data[15]
             self.Side = str(data[17].decode('utf8'))
-            self.ReasonCode = data[19]
+#             self.ReasonCode = data[19]
 
     def __str__(self):
         result = ''
@@ -131,7 +131,7 @@ class NyseOpenBookRecord(object):
         empty_record.SourceTime = result['time']
         empty_record.Price = result['price']
         empty_record.Volume = result['volume']
-        empty_record.ChgQty = result['ChgQty']
+#         empty_record.ChgQty = result['ChgQty']
         empty_record.Side = result['Side']
         return empty_record
 
@@ -142,24 +142,10 @@ class NyseOrderBook(object):
     
     X = []
     Y = []
-    
-    prev_order = None
-    prev_buy = None
-    prev_sell = None
-    
+        
     transaction_price = 0.0
     prev_transaction_price = 0.0
     
-    time_since_prev_order = 0.0
-    order_price = 0.0
-    mid_price = 0.0
-    order_volume = 0
-    order_side = 'X'
-    sell_price_diff = 0.0
-    buy_price_diff = 0.0
-    avg_sell_price = 0.0
-    avg_buy_price = 0.0
-
     def __init__(self, name='unknown'):
         self.name = name
 
@@ -177,11 +163,20 @@ class NyseOrderBook(object):
                             remaining_volume = 0
                         self.transaction_price = order.Price
                     else:
-                        self.buy_orders.append(order)
-                        self.buy_orders.sort(key=lambda x: x.Price, reverse=True)
+                        matching_order = next((x for x in self.buy_orders if x.Price == order.Price), None)
+                        if matching_order:
+                            matching_order.Volume += order.Volume
+                        else:    
+                            self.buy_orders.append(order)
+                            self.buy_orders.sort(key=lambda x: x.Price, reverse=True)
                         break
                 else:
-                    self.buy_orders.append(order)
+                    matching_order = next((x for x in self.buy_orders if x.Price == order.Price), None)
+                    if matching_order:
+                        matching_order.Volume += order.Volume
+                    else:    
+                        self.buy_orders.append(order)
+                        self.buy_orders.sort(key=lambda x: x.Price, reverse=True)
                     break
         elif order.Side == 'S':
             while remaining_volume > 0:
@@ -194,82 +189,88 @@ class NyseOrderBook(object):
                             remaining_volume = 0
                         self.transaction_price = order.Price
                     else:
-                        self.sell_orders.append(order)
-                        self.sell_orders.sort(key=lambda x: x.Price, reverse=False)
+                        matching_order = next((x for x in self.sell_orders if x.Price == order.Price), None)
+                        if matching_order:
+                            matching_order.Volume += order.Volume
+                        else:                   
+                            self.sell_orders.append(order)
+                            self.sell_orders.sort(key=lambda x: x.Price, reverse=False)
                         break
                 else:
-                    self.sell_orders.append(order)
+                    matching_order = next((x for x in self.sell_orders if x.Price == order.Price), None)
+                    if matching_order:
+                        matching_order.Volume += order.Volume
+                    else:                   
+                        self.sell_orders.append(order)
+                        self.sell_orders.sort(key=lambda x: x.Price, reverse=False)
                     break
                 
         self.update_history(order)
         
     def update_history(self, order):
-        self.order_side = 0 if order.Side == 'S' else 1
-        self.order_price = order.Price
-        self.order_volume = order.Volume
-        self.time_since_prev_order = self.get_time_since_order(order)
-        self.mid_price = self.get_mid_price()
-        self.sell_price_diff = self.get_sell_price_diff(order)
-        self.buy_price_diff = self.get_buy_price_diff(order)
-        self.avg_sell_price = self.get_avg_sell_price()
-        self.avg_buy_price = self.get_avg_buy_price()
         
-        if order.Side == 'B':
-            self.prev_buy = order
-        elif order.Side == 'S':
-            self.prev_sell = order
-        self.prev_order = order
+        levels = 3
         
-        self.X.append(self.getX())
-        self.Y.append(self.getY())
+        if levels + 1 > len(self.sell_orders):
+            levels = len(self.sell_orders) - 1
+        
+        if levels + 1 > len(self.buy_orders):
+            levels = len(self.buy_orders) - 1
+        
+        v1 = []
+        v2 = []
+        v3 = []
+        v4 = [0.0, 0.0, 0.0, 0.0]
+        v5 = [0.0, 0.0]
+        
+        for i in range(0, levels):
+            v1.append(self.sell_orders[i].Price)
+            v1.append(self.sell_orders[i].Volume)
+            v1.append(self.buy_orders[i].Price)
+            v1.append(self.buy_orders[i].Volume)
+            
+            v2.append(self.sell_orders[i].Price - self.buy_orders[i].Price)
+            v2.append((self.sell_orders[i].Price + self.buy_orders[i].Price) / 2.0)
+
+            v3.append(abs(self.sell_orders[i+1].Price - self.sell_orders[i].Price))
+            v3.append(abs(self.buy_orders[i+1].Price - self.buy_orders[i].Price))
+        
+        for i in range(0, levels):
+            v4[0] += self.sell_orders[i].Price
+            v4[1] += self.buy_orders[i].Price
+            v4[2] += self.sell_orders[i].Volume
+            v4[3] += self.buy_orders[i].Volume
+            v5[0] += self.sell_orders[i].Price - self.buy_orders[i].Price
+            v5[1] += self.sell_orders[i].Volume - self.buy_orders[i].Volume
+        
+        if levels > 0:
+            v4[0] /= float(levels)
+            v4[1] /= float(levels)
+            v4[2] /= float(levels)
+            v4[3] /= float(levels)
+            
+        X = self.getX(v1, v2, v3, v4, v5)
+        Y = self.getY(self.prev_transaction_price, self.transaction_price)
+        if len(X) == 30:
+            self.X.append(X)
+            self.Y.append(Y)
         
         self.prev_transaction_price = self.transaction_price
         
-    def get_time_since_order(self, order):
-        time = 0.0
-        if self.prev_order:
-            time = order.SourceTime - self.prev_order.SourceTime       
-        return time
-        
-    def get_mid_price(self):
-        midprice = 0.0
-        if self.sell_orders:
-            if self.buy_orders:
-                midprice = (self.sell_orders[0].Price + self.buy_orders[0].Price) / 2         
-        return midprice
+    def getX(self, v1, v2, v3, v4, v5):
+        x = []
+        x.extend(v1)
+        x.extend(v2)
+        x.extend(v3)
+        x.extend(v4)
+        x.extend(v5)
+        return x
 
-    def get_sell_price_diff(self, order):
-        diff = 0.0
-        if self.prev_sell:
-            diff = order.Price - self.prev_sell.Price    
-        return diff
-    
-    def get_buy_price_diff(self, order):
-        diff = 0.0
-        if self.prev_buy:
-            diff = order.Price - self.prev_buy.Price    
-        return diff
-
-    def get_avg_sell_price(self):
-        avg = 0.0
-        if self.sell_orders:
-            avg = sum(x.Price for x in self.sell_orders) / float(len(self.sell_orders))
-        return avg
-    
-    def get_avg_buy_price(self):
-        avg = 0.0
-        if self.buy_orders:
-            avg = sum(x.Price for x in self.buy_orders) / float(len(self.buy_orders))
-        return avg
-    
-    def getX(self):
-        return [self.time_since_prev_order, self.order_price, self.mid_price, self.order_volume, self.order_side, self.sell_price_diff, self.buy_price_diff, self.avg_sell_price, self.avg_buy_price]
-
-    def getY(self):
+    def getY(self, previous, current):
         y = 1
-        if self.transaction_price < self.prev_transaction_price:
+        if current < previous:
             y = 0
-        elif self.transaction_price > self.prev_transaction_price:
+        elif current > previous:
             y = 2
         return y
     
@@ -323,7 +324,12 @@ def prepare_data(book, window_size):
     
     x, y = get_balanced_subsample(x, y)
     
-    y = np_utils.to_categorical(y, 3)
+    xy = list(zip(x, y))
+    np.random.shuffle(xy)
+    x_, y_ = zip(*xy)
+    x = np.array(x_)
+    
+    y = np_utils.to_categorical(y_, 3)
 
     print("{0} records with price down".format(sum(y[:, 0])))
     print("{0} records with price stable".format(sum(y[:, 1])))
@@ -353,11 +359,11 @@ def main():
     # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)
     # record_filter = (lambda x: 'C' in x.ReasonCode)
-    book.read_from_file(filename, record_filter, 10000)
+    book.read_from_file(filename, record_filter, 1000000)
     # book.print_records()
-    db_client = pymongo.MongoClient('localhost', 27017)
-    book.save_to_db(db_client['nyse'])
-     
+#     db_client = pymongo.MongoClient('localhost', 27017)
+#     book.save_to_db(db_client['nyse'])
+        
     for list in book.symbols_dict.itervalues():
         book.pickle_to_file(list[0].Symbol)
     

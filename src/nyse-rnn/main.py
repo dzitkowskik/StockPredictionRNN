@@ -16,11 +16,11 @@ def main():
     print("----------------------------------------------------------------------")
     print("TRAIN RNN")
     print("----------------------------------------------------------------------")
-
+ 
     rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt))
     rnn_data = data
     rnn_errors_train, rnn_errors_tst = rnn_nn.run_with_cross_validation(rnn_data, cross_validation_passes)
-
+ 
     print("----------------------------------------------------------------------")
     print("RNN AVERAGE ERROR = {0}".format(np.average(rnn_errors_tst)))
     print("----------------------------------------------------------------------")
