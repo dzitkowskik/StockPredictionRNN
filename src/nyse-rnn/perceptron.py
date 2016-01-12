@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 
 
 class MLP:
-    def __init__(self, input_length, hidden_cnt, input_dim=30, output_dim=3):
+    def __init__(self, input_length, hidden_cnt, input_dim, output_dim):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.input_length = input_length

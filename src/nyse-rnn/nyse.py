@@ -208,14 +208,14 @@ class NyseOrderBook(object):
         self.update_history(order)
         
     def update_history(self, order):
-        
         levels = 3
+        n = levels
         
-        if levels + 1 > len(self.sell_orders):
-            levels = len(self.sell_orders) - 1
+        if n + 1 > len(self.sell_orders):
+            n = len(self.sell_orders) - 1
         
-        if levels + 1 > len(self.buy_orders):
-            levels = len(self.buy_orders) - 1
+        if n + 1 > len(self.buy_orders):
+            n = len(self.buy_orders) - 1
         
         v1 = []
         v2 = []
@@ -223,7 +223,7 @@ class NyseOrderBook(object):
         v4 = [0.0, 0.0, 0.0, 0.0]
         v5 = [0.0, 0.0]
         
-        for i in range(0, levels):
+        for i in range(0, n):
             v1.append(self.sell_orders[i].Price)
             v1.append(self.sell_orders[i].Volume)
             v1.append(self.buy_orders[i].Price)
@@ -235,7 +235,7 @@ class NyseOrderBook(object):
             v3.append(abs(self.sell_orders[i+1].Price - self.sell_orders[i].Price))
             v3.append(abs(self.buy_orders[i+1].Price - self.buy_orders[i].Price))
         
-        for i in range(0, levels):
+        for i in range(0, n):
             v4[0] += self.sell_orders[i].Price
             v4[1] += self.buy_orders[i].Price
             v4[2] += self.sell_orders[i].Volume
@@ -243,15 +243,15 @@ class NyseOrderBook(object):
             v5[0] += self.sell_orders[i].Price - self.buy_orders[i].Price
             v5[1] += self.sell_orders[i].Volume - self.buy_orders[i].Volume
         
-        if levels > 0:
-            v4[0] /= float(levels)
-            v4[1] /= float(levels)
-            v4[2] /= float(levels)
-            v4[3] /= float(levels)
+        if n > 0:
+            v4[0] /= float(n)
+            v4[1] /= float(n)
+            v4[2] /= float(n)
+            v4[3] /= float(n)
             
         X = self.getX(v1, v2, v3, v4, v5)
         Y = self.getY(self.prev_transaction_price, self.transaction_price)
-        if len(X) == 30:
+        if len(X) == 4*levels + 2*levels + 2*levels + 4 + 2:
             self.X.append(X)
             self.Y.append(Y)
         
@@ -353,19 +353,19 @@ def get_test_data(window_size):
 
 def main():
     book = NyseOpenBook("test")
-    # filename = 'bigFile.binary'
-    filename = '/media/ghash/OTHER/Dane/EQY_US_NYSE_BOOK_20130403/openbookultraAA_N20130403_1_of_1'
-    # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
-    # record_filter = (lambda x: 'AZN' in x.Symbol)
-    record_filter = (lambda x: True)
-    # record_filter = (lambda x: 'C' in x.ReasonCode)
-    book.read_from_file(filename, record_filter, 1000000)
-    # book.print_records()
-#     db_client = pymongo.MongoClient('localhost', 27017)
-#     book.save_to_db(db_client['nyse'])
-        
-    for list in book.symbols_dict.itervalues():
-        book.pickle_to_file(list[0].Symbol)
+#     # filename = 'bigFile.binary'
+#     filename = 'openbookultraAA_N20130403_1_of_1'
+#     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
+#     # record_filter = (lambda x: 'AZN' in x.Symbol)
+#     record_filter = (lambda x: True)
+#     # record_filter = (lambda x: 'C' in x.ReasonCode)
+#     book.read_from_file(filename, record_filter, 1000000)
+#     # book.print_records()
+# #     db_client = pymongo.MongoClient('localhost', 27017)
+# #     book.save_to_db(db_client['nyse'])
+#         
+#     for list in book.symbols_dict.itervalues():
+#         book.pickle_to_file(list[0].Symbol)
     
     book.symbols_dict = {}
     book.pickle_from_file('AIG')
@@ -377,6 +377,7 @@ def main():
         for order in list:
             order_book.process_order(order)
     book.print_records()
+    prepare_data(order_book, 100)
 
 if __name__ == '__main__':
     main()
