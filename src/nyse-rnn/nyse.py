@@ -356,7 +356,7 @@ def get_test_data(window_size):
 def main():
     book = NyseOpenBook("test")
 #     # filename = 'bigFile.binary'
-    filename = '/media/ghash/OTHER/Dane/EQY_US_NYSE_BOOK_20130403/openbookultraAA_N20130403_1_of_1'
+    filename = '/Users/ghash/Desktop/data/openbookultraAA_N20130403_1_of_1'
 #     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
 #     # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)

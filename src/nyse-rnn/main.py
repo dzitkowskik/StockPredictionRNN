@@ -6,6 +6,7 @@ import classification_performance as cp
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from sklearn import cross_validation
 
 
 def fs():
@@ -61,25 +62,35 @@ def rrn_iter_error():
 
     data = get_test_data(input_length)
 
+    errors = {}
+    errors["test"] = []
+    errors["train"] = []
+
+    n = data.x.shape[0]
+
+    x_train = data.x[:(n/2), :]
+    y_train = data.y[:(n/2), :]
+    x_test = data.x[(n/2):, :]
+    y_test = data.y[(n/2):, :]
+
+    data_train = Data(x_train, y_train)
+    data_test = Data(x_test, y_test)
+
+    print('train x shape:', data_train.x.shape)
+    print('train y shape:', data_train.y.shape)
+    print('test x shape:', data_test.x.shape)
+    print('test y shape:', data_test.y.shape)
+
     print("----------------------------------------------------------------------")
     print("TRAIN RNN")
     print("----------------------------------------------------------------------")
 
     rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]))
-    rnn_data = data
-    error_train = rnn_nn.train(rnn_data)
-    print("Train ERROR: {0}".format(error_train))
-    error_tst = rnn_nn.test(rnn_data)
-    print("Test ERROR: {0}".format(error_tst))
-
-    errors = {}
-    errors["test"] = []
-    errors["train"] = []
 
     for i in range(5):
-        error_train = rnn_nn.train(rnn_data)
+        error_train = rnn_nn.train(data_train)
         print("Train ERROR: {0}".format(error_train))
-        error_tst = rnn_nn.test(rnn_data)
+        error_tst = rnn_nn.test(data_test)
         print("Test ERROR: {0}".format(error_tst))
         errors["train"].append(error_train)
         errors["test"].append(error_tst)
@@ -91,12 +102,17 @@ def rrn_iter_error():
     output.close()
 
 
-# def rrn_iter_error_plot():
-#     with open('RNN_errors', 'rb') as f:
-#         errors = pickle.load(f)
-#
-#     plt.figure()
-#     plt.plot(errors["train"])
+def rrn_iter_error_plot():
+    with open('RNN_errors', 'rb') as f:
+        errors = pickle.load(f)
+
+    print("Train ERRORS: {0}".format(errors["train"]))
+    print("Test ERRORS: {0}".format(errors["test"]))
+
+    plt.figure()
+    plt.plot(errors["train"])
+    plt.plot(errors["test"])
+    plt.show()
 
 
 def main():
@@ -144,4 +160,5 @@ if __name__ == '__main__':
     # main()
     # fs()
     # plot_features()
+    rrn_iter_error()
     rrn_iter_error_plot()
