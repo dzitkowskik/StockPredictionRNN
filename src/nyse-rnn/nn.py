@@ -71,14 +71,17 @@ class NeuralNetwork:
         self.nn.change_input_dim(input_dim)
         self.model = self.nn.get_model()
 
-    def feature_selection(self, data):
+    def feature_selection(self, data, cross_val_passes=3):
         # N - number of observations, T - number of time points, M - number of features
         N, T, M = data.x.shape
         print("M = {0}".format(M))
         best_err_rate = 1
+        best_feature = 0
         available_features = range(M)
         selected_features = []
         temp_selected_features = []
+
+        results = []
 
         for i in range(M):
             progress = False
@@ -87,15 +90,24 @@ class NeuralNetwork:
                 current_feature_set = list(selected_features)
                 current_feature_set.append(feature)
                 print("current feature set = {0}".format(current_feature_set))
-                train_errors, test_errors = self.__run_with_cross_validation(data.x[:, :, current_feature_set], data.y, 4)
+
+                train_errors, test_errors = self.__run_with_cross_validation(
+                        data.x[:, :, current_feature_set],
+                        data.y,
+                        cross_val_passes)
+
                 error = np.average(test_errors)
+                results.append((current_feature_set, error))
+
                 if error < best_err_rate:
                     best_err_rate = error
+                    best_feature = feature
                     temp_selected_features = list(current_feature_set)
                     progress = True
             if not progress:
                 break
+            available_features.remove(best_feature)
             selected_features = temp_selected_features
-            print("selected features = {0}".format(selected_features))
+            print("selected features = {0}, err reate = {1}".format(selected_features, best_err_rate))
 
-        return selected_features
+        return selected_features, results

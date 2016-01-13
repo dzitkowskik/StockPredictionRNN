@@ -1,6 +1,7 @@
 from pylab import *
 from scipy import stats
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class ClassificationPerformance:
@@ -31,9 +32,9 @@ class ClassificationPerformance:
 
     def make_plots(self):
         # Boxplot to compare classifier error distributions
-        figure()
-        boxplot(self.errors)
-        xlabel(' vs '.join(self.names))
-        ylabel('K-fold cross-validation error [%]')
-        xticks(range(self.count), self.names)
-        show()
+        plt.figure()
+        plt.boxplot(self.errors)
+        plt.xlabel(' vs '.join(self.names))
+        plt.ylabel('K-fold cross-validation error [%]')
+        plt.xticks(range(self.count), self.names)
+        plt.show()
