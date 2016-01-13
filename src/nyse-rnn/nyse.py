@@ -276,8 +276,8 @@ class NyseOrderBook(object):
     
     def getXY(self):
         return self.X, self.Y
-    
-    
+
+
 def get_balanced_subsample(x, y, subsample_size=1.0):
         class_xs = []
         min_elems = None
@@ -310,7 +310,8 @@ def get_balanced_subsample(x, y, subsample_size=1.0):
         ys = np.concatenate(ys)
     
         return xs, ys
-    
+
+
 def prepare_data(book, window_size):
     x, y = book.getXY()
     x_temp = []
@@ -338,6 +339,7 @@ def prepare_data(book, window_size):
     print('y shape:', y.shape)
 
     return Data(x, y)
+
 
 def get_test_data(window_size):
     book = NyseOpenBook("test")

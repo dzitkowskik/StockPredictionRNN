@@ -26,7 +26,6 @@ class RNN:
         model.add(Dense(self.hidden_cnt, activation='tanh'))
         model.add(Dense(self.output_dim, activation='softmax'))
 
-        # try using different optimizers and different optimizer configs
         print('Compile model...')
         sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         model.compile(loss='categorical_crossentropy', optimizer=sgd)

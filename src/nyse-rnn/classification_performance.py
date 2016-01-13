@@ -18,7 +18,7 @@ class ClassificationPerformance:
     def compare(self):
         for i in range(self.count):
             for j in range(self.count):
-                if i != j:
+                if i < j:
                     tst, pvalue = stats.ttest_ind(self.errors[i], self.errors[j])
                     if pvalue < 0.05:
                         print("{0} is significantly better than {1}".format(self.names[i], self.names[j]))

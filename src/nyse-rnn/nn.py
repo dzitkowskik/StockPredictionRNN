@@ -5,7 +5,7 @@ from nyse import Data
 
 
 class NeuralNetwork:
-    def __init__(self, nn, validation_split=0.5, batch_size=128, nb_epoch=3, show_accuracy=True):
+    def __init__(self, nn, validation_split=0.25, batch_size=128, nb_epoch=10, show_accuracy=True):
         self.show_accuracy = show_accuracy
         self.nb_epoch = nb_epoch
         self.batch_size = batch_size

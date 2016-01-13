@@ -6,6 +6,16 @@ import classification_performance as cp
 import numpy as np
 
 
+def fs():
+    input_length = 100
+    hidden_cnt = 50
+    cross_validation_passes = 2
+    data = get_test_data(input_length)
+    rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt))
+    features = rnn_nn.feature_selection(data)
+    print("Selected features: {0}".format(features))
+
+
 def main():
     input_length = 100
     hidden_cnt = 50
@@ -45,4 +55,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    fs()
