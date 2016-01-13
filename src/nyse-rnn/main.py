@@ -54,6 +54,50 @@ def plot_features():
     features_figure.waitforbuttonpress()
 
 
+def rrn_iter_error():
+    input_length = 100
+    hidden_cnt = 50
+    cross_validation_passes = 10
+
+    data = get_test_data(input_length)
+
+    print("----------------------------------------------------------------------")
+    print("TRAIN RNN")
+    print("----------------------------------------------------------------------")
+
+    rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]))
+    rnn_data = data
+    error_train = rnn_nn.train(rnn_data)
+    print("Train ERROR: {0}".format(error_train))
+    error_tst = rnn_nn.test(rnn_data)
+    print("Test ERROR: {0}".format(error_tst))
+
+    errors = {}
+    errors["test"] = []
+    errors["train"] = []
+
+    for i in range(5):
+        error_train = rnn_nn.train(rnn_data)
+        print("Train ERROR: {0}".format(error_train))
+        error_tst = rnn_nn.test(rnn_data)
+        print("Test ERROR: {0}".format(error_tst))
+        errors["train"].append(error_train)
+        errors["test"].append(error_tst)
+
+    print(errors)
+
+    output = open('RNN_errors', 'wb')
+    pickle.dump(errors, output)
+    output.close()
+
+
+# def rrn_iter_error_plot():
+#     with open('RNN_errors', 'rb') as f:
+#         errors = pickle.load(f)
+#
+#     plt.figure()
+#     plt.plot(errors["train"])
+
 
 def main():
     input_length = 100
@@ -99,4 +143,5 @@ def main():
 if __name__ == '__main__':
     # main()
     # fs()
-    plot_features()
+    # plot_features()
+    rrn_iter_error_plot()
