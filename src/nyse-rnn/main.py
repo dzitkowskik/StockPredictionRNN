@@ -23,7 +23,7 @@ def fs():
     print("Selected features: {0}".format(features))
     print(results)
 
-    feature_selection = {"features": features, "results": results}
+    feature_selection = {"features": features, "results": results, "count": data.x.shape[2]}
     output = open('RNN_features', 'wb')
     pickle.dump(feature_selection, output)
     output.close()
@@ -34,8 +34,10 @@ def plot_features():
     with open('RNN_features', 'rb') as f:
         feature_selection = pickle.load(f)
 
+    # n = feature_selection["count"]
+    n = 30
     feature_mean_errors = []
-    for featureNo in range(4):
+    for featureNo in range(n):
         mean_error = np.average(np.ravel([y for (x,y) in feature_selection["results"] if featureNo in x]))
         print("Feature {0} -> Mean error = {1}".format(featureNo, mean_error))
         feature_mean_errors.append(mean_error)
@@ -95,6 +97,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
     # fs()
-    # plot_features()
+    plot_features()
