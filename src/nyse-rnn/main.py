@@ -22,7 +22,7 @@ def fs():
     print(results)
 
     feature_selection = {"features": features, "results": results, "count": data.x.shape[2]}
-    output = open('RNN_features', 'wb')
+    output = open('../results/RNN_features', 'wb')
     pickle.dump(feature_selection, output)
     output.close()
 
@@ -84,7 +84,7 @@ def rrn_iter_error(iters=200):
 
     print(errors)
 
-    output = open('RNN_errors_2', 'wb')
+    output = open('../results/RNN_errors', 'wb')
     pickle.dump(errors, output)
     output.close()
 
@@ -146,7 +146,7 @@ def mlp_iter_error(iters=200):
 
     print(errors)
 
-    output = open('MLP_errors', 'wb')
+    output = open('../results/MLP_errors', 'wb')
     pickle.dump(errors, output)
     output.close()
 
