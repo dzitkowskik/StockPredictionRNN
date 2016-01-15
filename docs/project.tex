@@ -26,7 +26,7 @@
 \usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
 \linespread{1.05} % Line spacing - Palatino needs more space between lines
 \usepackage{microtype} % Slightly tweak font spacing for aesthetics
-
+\usepackage{listings}
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \usepackage{multicol} % Used for the two-column layout of the document
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
@@ -65,6 +65,8 @@
 \thanks{Project for Computational Intelligence Business Applications Course}\\[2mm] % Your name
 \textsc{Karol Dzitkowski}\\
 \normalsize \href{mailto:k.dzitkowski@gmail.com}{k.dzitkowski@gmail.com} \\
+\textsc{Tomasz Kozicki}\\
+\normalsize \href{mailto:tom.kozicki@o2.pl}{tom.kozicki@o2.pl} \\
 \normalsize Warsaw University of Technology\\
 \vspace{-5mm}
 }
@@ -169,8 +171,9 @@ Side & Char(1) \\
 \end{tabular}
 \end{table}
 
-For me the most important are price, volume na side data, because I will use them among others as an input to the network. 
-Network will be always trained only for one symbol and for events of submission. I am going to experiment with different inputs,
+For me the most important are price, volume na side data, because I will use them 
+among others as an input to the network. Network will be always trained only for one symbol 
+and for events of submission. I am going to experiment with different inputs,
 probably using some feature extraction, or choosing custom subset of features by myself.
 Inputs I am going to consider are:
 
@@ -183,43 +186,171 @@ Inputs I am going to consider are:
 \item PriceDiff - Difference of price between last bid or ask
 \end{itemize}
 
-The same inputs will be used to learn ordinary perceptron with one hidden layer. Number of nodes in the hidden layer in that \emph(testing)
-perceptron will be optimized to maximize its performance. The output for both neural networks will be the next bid or ask price which should
-appear in the book. \\
+The same inputs will be used to learn ordinary perceptron with one hidden layer. 
+Number of nodes in the hidden layer in that \emph(testing) perceptron will be optimized 
+to maximize its performance. The problem we want to solve is classification - we want to estimate
+if a price (of ask or bid) will be lower, higher or the same in the next transaction. \\
 \newline
-For the estimation of performance of my neural networks I will use mean squared error loss function: \\
+For the estimation of performance of my neural networks I will use a mean error loss function: \\
 \newline
 \begin{center}
-$ err(t) = \frac{\sum\limits_{i=1}^t (y_{i} - Y_{i})}{t - 1} $
+$ err(t) = \frac{\sum\limits_{i=1}^t (y_{i} \neq Y_{i})}{t - 1} $
 \end{center}
 %------------------------------------------------
 
 \section{Implementation details}
 
-Keras library will be used for development of the solution, since it provides all necessary layer types including LSTM in the version described
-above as well as GRU. Since it uses Theano under the hood it is possible to swich on GPU usage, involving that time consuming computations
-will be executed on my NVIDIA graphic card using CUDA technology.
+All development will be done using Python language in version 2.7 using Unix system.
+Keras library will be used for development of the solution, since it provides all necessary 
+layer types including LSTM in the version described above as well as GRU. Since it uses 
+Theano under the hood it is possible to swich on GPU usage, involving that time consuming 
+computations will be executed on my NVIDIA graphic card using CUDA technology.
 
+\subsection{Test data providing}
+As a basic data that our program operates on we have chosen a NYSE OpenBook Ultra data set from 03/04/2013. The data for given stock symbol is parsed from large binary file and can be conveniently saved to the database and/or file. Then this message book is transformed into an order book message by message to capture the transaction price changes in each moment of time, as well as the history of other stock parameters for further building of the features.
+
+\subsection{Algorithms}
+Classes NeuralNetwork and ClassificationPerformance implements:
+\begin{itemize} 
+\item \emph{Feature selection} \\
+A method of performing feature selection with greedy forward selection using cross validation. 
+We will try to use only selected features in neural network learning procedure. It gets testing data and neural network in parameters and returns a list of numbers of features to use.
+\item \emph{Crossvalidation} \\
+A method of using neural network training, cross validating it N times with different test and train data sets randomly choosen from whole dataset. It returns a vector of error rates (training and testing). 
+Data is split in proportion defined by a parameter.
+\item \emph{T-Student significance test} \\
+A method \emph{compare} in ClassificationPerformance class uses t-student distance between error rates
+of two different neural networks, and basing on pvalue is states if there exists significant difference 
+between two solutions. We will use that to determine if really one neural network performs better than 
+the other.
+\end{itemize}
 %------------------------------------------------
 
-\section{Results}
+\section{Early Results}
+Attached is text file ,,CIBA\_earlyResults.txt'' which contains execution of the program for $19k$ events of the \emph{AIG} stock order book.
+Both RNN and MLP report high accuracy from the beginning of iterations. This is very suspicious behaviour that can be explained by the data set characteristics in the next paragraph. As we can see the cross validation correctly divides the samples for training and testing and the feature selection chooses the best features. Due to no negligible differences in performance the program reports that RNN and MLP are not significantly different.
+
+\subsection{Imbalanced data set}
+The problem that occurred during test phase turned out to be originating with data approach.
+As the response value for our vector of features we have choosen indicator wheter the transaction price for a given stock has dropped, stayed the same or risen. This results in response variable being mainly dominated by the second case, because transactions on NYSE OpenBook occur much less often than we initialy expected, making below around 10 percent of overall entries.
+Above leads to the poor learning performance of the neural networks. It is just easier for them to assume no transaction price change since it is the correct choice most of the time.
+
+\section{Revieved solution}
+
+Because we did not get satisfactory results, we had to change our solution in case of features and
+balance of classes in our data. Ultimately we got balanced data and many more features, and better results.
+Below we exmplain detailed final solution:
+
+\subsection{Data set}
+
+TUTAJ OPISZ JAK BALANSUJESZ DANE - ZE ROBISZ UNDERSAMPLING - OPISZ TEN ALGORYTM TROCHE MOZE?
+
+\subsection{Features and output}
+
+TUTAJ OPISZ JAK TWORZYSZ ORDER BOOKA I JAKIE FEATURES Z NIEGO BIERZESZ
+ROWNIEZ OPISZ JAKIE TERAZ MAMY KLASY CZYLI CO ZNACZA - CZYLI JAK ZMIENIL SIE OUTPUT, CZYM JEST TEN PRICE
+NASTEPNIE NAPISZ JAK ZALEZY ILOSC FEATURES OD LEVEL I ZE MOZNA GO USTAWIAC
+
+NAPISZ ZE UZYWALISMY FEATURE SELECTION ALE WYSZLO NAM ZE WSZYSTKIE SA TAK SAMO WAZNE PRAWIE I TUTAJ JAKO
+GLUPI DOWOD DAMY TEN WYKRESIK:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.15]{../results/features}
+\caption{Features importance}
+\label{ref:rnn}
+\end{figure} 
+
+\subsection{Networks}
+At the end we resigned from using GRU network and instead focus on LSTM comparing it to ordinary MLP.
+In learning we used Stochastic gradient descent optimizer with categorical crossentropy loss function.
+Below we present actual models of networks used:
+\begin{lstlisting}[language=Python, frame=single, basicstyle=\tiny]
+PERCEPTRON:
+model = Sequential()
+model.add(TimeDistributedDense(output_dim=self.hidden_cnt,
+                               input_dim=self.input_dim,
+                               input_length=self.input_length,
+                               activation='sigmoid'))
+model.add(TimeDistributedMerge(mode='ave'))
+model.add(Dropout(0.5))
+model.add(Dense(self.hidden_cnt, activation='tanh'))
+model.add(Dense(self.output_dim, activation='softmax'))
+
+LSTM:
+model = Sequential()
+model.add(LSTM(output_dim=self.hidden_cnt,
+			   input_dim=self.input_dim,
+			   input_length=self.input_length,
+			   return_sequences=False))
+model.add(Dropout(0.5))
+model.add(Dense(self.hidden_cnt, activation='tanh'))
+model.add(Dense(self.output_dim, activation='softmax'))
+\end{lstlisting}
+
+\subsection{GPU usage}
+Because of the fact that our NN are learning slowly, and teaching them is time consuming we found
+useful to switch on BLAS and CUDA enabled devices usage by Theano library. To do that it was sufficient to
+create a file ~/.theanorc with content: \\
+\begin{lstlisting}
+[global]
+floatX = float32
+device = gpu1
+
+[blas]
+ldflags = -L/usr/local/lib -lopenblas
+
+[nvcc]
+fastmath = True
+\end{lstlisting}
+
+Using that new architecture and solution we received our final results.
+
+\section{Final Results}
+
+TUTAJ TRZEBA POZBIERAC NASZE OSTATECZNE WYNIKI, CO NAM WYSZLO, NASZE WYKRESY
 
 \section{Conclusion}
+
+KROTKIE PODSUMOWANIE TEGO CZEGO SIE NAUCZYLISMY I CO NAM WYSZLO Z NASZEGO REASERCHU
 
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST
 %----------------------------------------------------------------------------------------
 
-\begin{thebibliography}{99} % Bibliography - this is intentionally simple in this template
+\begin{thebibliography}{99}
+
+\bibitem{art01}
+    ``Modeling high-frequency limit order book dynamics with support vector machines'' \\
+\emph{http://www.math.fsu.edu/~aluffi/archive/paper462.pdf} \\
+	Alec N. Kercheval and Yuan Zhang, 24 October 2013
+
+\bibitem{art02}
+	``An Empirical Exploration of Recurrent Network Architectures'' \\
+\emph{http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf}
+	Rafal Jozefowicz, Wojciech Zaremba, Ilya Sutskever
+	
+\bibitem{art03}
+	``Long short-term memory'' \\
+\emph{http://deeplearning.cs.cmu.edu/pdfs/Hochreiter97\_lstm.pdf}
+	Sepp Hochreiter and Jurgen Schmidhuber, 1997
 
 \bibitem{tut01}
-    ``LSTM implementation explained'' - \emph{https://apaszke.github.io/lstm-explained.html} Adam Paszke, 30 Aug 2015
+    ``LSTM implementation explained'' \\
+\emph{https://apaszke.github.io/lstm-explained.html} 
+	Adam Paszke, 30 Aug 2015
+
 \bibitem{tut02}
-    ``Recurrent Neural Networks Tutorial - Implementing a RNN with Python, Numpy and Theano'' - \emph{http://www.wildml.com/2015/09/recurrent-neural-networks-tutorial-part-2-implementing-a-language-model-rnn-with-python-numpy-and-theano/}
+    ``Recurrent Neural Networks Tutorial - Implementing a RNN with Python, Numpy and Theano'' \\ \emph{http://www.wildml.com/2015/09/recurrent-neural-networks-tutorial-part-2-implementing-a-language-model-rnn-with-python-numpy-and-theano/}
+
 \bibitem{tut03}
-    ``Keras library'' - \emph{http://keras.io}
+    ``Keras library'' \\
+\emph{http://keras.io}
+
 \bibitem{tut04}
-    ``Supervised Sequence Labelling with Recurrent Neural Networks'' - \emph{http://www.cs.toronto.edu/~graves/preprint.pdf} Alex Graves
+    ``Supervised Sequence Labelling with Recurrent Neural Networks''	\\	\emph{http://www.cs.toronto.edu/~graves/preprint.pdf} 
+    Alex Graves
+
 \end{thebibliography}
 
 %----------------------------------------------------------------------------------------

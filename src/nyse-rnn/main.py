@@ -3,10 +3,7 @@ import perceptron
 from nyse import *
 import nn
 import classification_performance as cp
-import numpy as np
-import pickle
-import matplotlib.pyplot as plt
-from sklearn import cross_validation
+from plotting import *
 
 
 def fs():
@@ -30,37 +27,14 @@ def fs():
     output.close()
 
 
-def plot_features():
+def rrn_iter_error(iters=200):
 
-    with open('RNN_features', 'rb') as f:
-        feature_selection = pickle.load(f)
-
-    # n = feature_selection["count"]
-    n = 30
-    feature_mean_errors = []
-    for featureNo in range(n):
-        mean_error = np.average(np.ravel([y for (x,y) in feature_selection["results"] if featureNo in x]))
-        print("Feature {0} -> Mean error = {1}".format(featureNo, mean_error))
-        feature_mean_errors.append(mean_error)
-
-    print("Selected features: {0}".format(feature_selection["features"]))
-    print("Feature mean errors: {0}".format(feature_mean_errors))
-
-    features_figure = plt.figure()
-    ax = plt.subplot(111)
-    feature_nos = range(len(feature_mean_errors))
-    ax.bar(feature_nos, feature_mean_errors, width=0.5, align='center')
-    plt.xticks(feature_nos, feature_nos)
-    features_figure.show()
-    features_figure.waitforbuttonpress()
-
-
-def rrn_iter_error():
-    input_length = 100
+    input_length = 25
     hidden_cnt = 50
-    cross_validation_passes = 10
-
     data = get_test_data(input_length)
+
+    print("input length ", input_length)
+    print("hidden_cnt ", hidden_cnt)
 
     errors = {}
     errors["test"] = []
@@ -85,9 +59,22 @@ def rrn_iter_error():
     print("TRAIN RNN")
     print("----------------------------------------------------------------------")
 
-    rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]))
+    # try to get best nn
+    best_error = 1
+    for x in range(10):
+        rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=2)
+        error_train = rnn_nn.train(data_train)
+        if error_train < best_error:
+            best_error = error_train
+            best_nn = rnn_nn
 
-    for i in range(5):
+    rnn_nn = best_nn
+    rnn_nn.nb_epoch = 10
+    for i in range(iters):
+        print("-----------------------------")
+        print("ITERATION {0} FROM {1}".format(i, iters))
+        print("-----------------------------")
+
         error_train = rnn_nn.train(data_train)
         print("Train ERROR: {0}".format(error_train))
         error_tst = rnn_nn.test(data_test)
@@ -97,29 +84,77 @@ def rrn_iter_error():
 
     print(errors)
 
-    output = open('RNN_errors', 'wb')
+    output = open('RNN_errors_2', 'wb')
     pickle.dump(errors, output)
     output.close()
 
 
-def rrn_iter_error_plot():
-    with open('RNN_errors', 'rb') as f:
-        errors = pickle.load(f)
+def mlp_iter_error(iters=200):
 
-    print("Train ERRORS: {0}".format(errors["train"]))
-    print("Test ERRORS: {0}".format(errors["test"]))
+    input_length = 25
+    hidden_cnt = 50
+    data = get_test_data(input_length)
 
-    plt.figure()
-    plt.plot(errors["train"])
-    plt.plot(errors["test"])
-    plt.show()
+    print("input length ", input_length)
+    print("hidden_cnt ", hidden_cnt)
+
+    errors = {}
+    errors["test"] = []
+    errors["train"] = []
+
+    n = data.x.shape[0]
+
+    x_train = data.x[:(n/2), :]
+    y_train = data.y[:(n/2), :]
+    x_test = data.x[(n/2):, :]
+    y_test = data.y[(n/2):, :]
+
+    data_train = Data(x_train, y_train)
+    data_test = Data(x_test, y_test)
+
+    print('train x shape:', data_train.x.shape)
+    print('train y shape:', data_train.y.shape)
+    print('test x shape:', data_test.x.shape)
+    print('test y shape:', data_test.y.shape)
+
+    print("----------------------------------------------------------------------")
+    print("TRAIN MLP")
+    print("----------------------------------------------------------------------")
+
+    # try to get best nn
+    best_error = 1
+    for x in range(4):
+        rnn_nn = nn.NeuralNetwork(perceptron.MLP(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=2)
+        error_train = rnn_nn.train(data_train)
+        if error_train < best_error:
+            best_error = error_train
+            best_nn = rnn_nn
+
+    rnn_nn = best_nn
+    rnn_nn.nb_epoch = 10
+    for i in range(iters):
+        print("-----------------------------")
+        print("ITERATION {0} FROM {1}".format(i, iters))
+        print("-----------------------------")
+
+        error_train = rnn_nn.train(data_train)
+        print("Train ERROR: {0}".format(error_train))
+        error_tst = rnn_nn.test(data_test)
+        print("Test ERROR: {0}".format(error_tst))
+        errors["train"].append(error_train)
+        errors["test"].append(error_tst)
+
+    print(errors)
+
+    output = open('MLP_errors', 'wb')
+    pickle.dump(errors, output)
+    output.close()
 
 
 def main():
     input_length = 100
     hidden_cnt = 50
     cross_validation_passes = 10
-
     data = get_test_data(input_length)
     
     print("----------------------------------------------------------------------")
@@ -160,5 +195,7 @@ if __name__ == '__main__':
     # main()
     # fs()
     # plot_features()
-    rrn_iter_error()
-    rrn_iter_error_plot()
+    # rrn_iter_error()
+    # rrn_iter_error_plot()
+    mlp_iter_error()
+    mlp_iter_error_plot()

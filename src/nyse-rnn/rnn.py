@@ -23,6 +23,7 @@ class RNN:
                        input_dim=self.input_dim,
                        input_length=self.input_length,
                        return_sequences=False))
+        model.add(Dropout(0.5))
         model.add(Dense(self.hidden_cnt, activation='tanh'))
         model.add(Dense(self.output_dim, activation='softmax'))
 

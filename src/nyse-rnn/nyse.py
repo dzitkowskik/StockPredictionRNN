@@ -4,10 +4,12 @@ import pickle
 import numpy as np
 from keras.utils import np_utils
 
+
 class Data:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
 
 class NyseOpenBook(object):
     format_characteristics = '>iHi11s2hih2ci2B3ih4c3i'
@@ -208,9 +210,9 @@ class NyseOrderBook(object):
         self.update_history(order)
         
     def update_history(self, order):
-        levels = 3
+        levels = 4
         n = levels
-        
+
         if n + 1 > len(self.sell_orders):
             n = len(self.sell_orders) - 1
         
@@ -356,12 +358,12 @@ def get_test_data(window_size):
 def main():
     book = NyseOpenBook("test")
 #     # filename = 'bigFile.binary'
-    filename = '/Users/ghash/Desktop/data/openbookultraAA_N20130403_1_of_1'
+    filename = '/media/ghash/OTHER/Dane/EQY_US_NYSE_BOOK_20130403/openbookultraAA_N20130403_1_of_1'
 #     # record_filter = (lambda x: ('NOM' in x.Symbol) & ((x.Side == 'B') | (x.Side == 'S')))
 #     # record_filter = (lambda x: 'AZN' in x.Symbol)
     record_filter = (lambda x: True)
 #     # record_filter = (lambda x: 'C' in x.ReasonCode)
-    book.read_from_file(filename, record_filter, 1000000)
+    book.read_from_file(filename, record_filter, 5*1e6)
 #     # book.print_records()
 # #     db_client = pymongo.MongoClient('localhost', 27017)
 # #     book.save_to_db(db_client['nyse'])

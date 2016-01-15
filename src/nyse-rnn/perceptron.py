@@ -23,8 +23,8 @@ class MLP:
                                        input_length=self.input_length,
                                        activation='sigmoid'))
         model.add(TimeDistributedMerge(mode='ave'))
-        model.add(Dense(self.hidden_cnt, activation='tanh'))
         model.add(Dropout(0.5))
+        model.add(Dense(self.hidden_cnt, activation='tanh'))
         model.add(Dense(self.output_dim, activation='softmax'))
 
         # try using different optimizers and different optimizer configs
