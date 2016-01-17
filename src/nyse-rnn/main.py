@@ -22,15 +22,15 @@ def fs():
     print(results)
 
     feature_selection = {"features": features, "results": results, "count": data.x.shape[2]}
-    output = open('../results/RNN_features', 'wb')
+    output = open('../../results/RNN_features', 'wb')
     pickle.dump(feature_selection, output)
     output.close()
 
 
 def rrn_iter_error(iters=200):
 
-    input_length = 25
-    hidden_cnt = 50
+    input_length = 50
+    hidden_cnt = 100
     data = get_test_data(input_length)
 
     print("input length ", input_length)
@@ -61,8 +61,8 @@ def rrn_iter_error(iters=200):
 
     # try to get best nn
     best_error = 1
-    for x in range(10):
-        rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=2)
+    for x in range(5):
+        rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=20)
         error_train = rnn_nn.train(data_train)
         if error_train < best_error:
             best_error = error_train
@@ -84,15 +84,15 @@ def rrn_iter_error(iters=200):
 
     print(errors)
 
-    output = open('../results/RNN_errors', 'wb')
+    output = open('../../results/RNN_errors', 'wb')
     pickle.dump(errors, output)
     output.close()
 
 
-def mlp_iter_error(iters=200):
+def mlp_iter_error(iters=500):
 
-    input_length = 25
-    hidden_cnt = 50
+    input_length = 50
+    hidden_cnt = 100
     data = get_test_data(input_length)
 
     print("input length ", input_length)
@@ -124,7 +124,7 @@ def mlp_iter_error(iters=200):
     # try to get best nn
     best_error = 1
     for x in range(4):
-        rnn_nn = nn.NeuralNetwork(perceptron.MLP(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=2)
+        rnn_nn = nn.NeuralNetwork(perceptron.MLP(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]), nb_epoch=20)
         error_train = rnn_nn.train(data_train)
         if error_train < best_error:
             best_error = error_train
@@ -146,7 +146,7 @@ def mlp_iter_error(iters=200):
 
     print(errors)
 
-    output = open('../results/MLP_errors', 'wb')
+    output = open('../../results/MLP_errors', 'wb')
     pickle.dump(errors, output)
     output.close()
 
@@ -154,7 +154,7 @@ def mlp_iter_error(iters=200):
 def main():
     input_length = 100
     hidden_cnt = 50
-    cross_validation_passes = 10
+    cross_validation_passes = 4
     data = get_test_data(input_length)
     
     print("----------------------------------------------------------------------")
@@ -192,10 +192,10 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     # fs()
     # plot_features()
     # rrn_iter_error()
     # rrn_iter_error_plot()
-    mlp_iter_error()
-    mlp_iter_error_plot()
+    # mlp_iter_error()
+    # mlp_iter_error_plot()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_features():
-    with open('../results/RNN_features', 'rb') as f:
+    with open('../../results/RNN_features', 'rb') as f:
         feature_selection = pickle.load(f)
 
     # n = feature_selection["count"]
@@ -28,7 +28,7 @@ def plot_features():
 
 
 def rrn_iter_error_plot():
-    with open('../results/RNN_errors', 'rb') as f:
+    with open('../../results/RNN_errors', 'rb') as f:
         errors = pickle.load(f)
 
     print("Train ERRORS: {0}".format(errors["train"]))
@@ -44,7 +44,7 @@ def rrn_iter_error_plot():
 
 
 def mlp_iter_error_plot():
-    with open('../results/MLP_errors', 'rb') as f:
+    with open('../../results/MLP_errors', 'rb') as f:
         errors = pickle.load(f)
 
     print("Train ERRORS: {0}".format(errors["train"]))
