@@ -317,7 +317,20 @@ WSZYSTKIE WYNIKI ZOSTALY WYGENEROWANE UZYWAJAC DANYCH SYMBOLU AIG ANALIZUJAC 2M 
 11040.0 records with price stable \\
 11040.0 records with price down \\
 
-A POTEM CO DOSTALISMY:
+A POTEM CO DOSTALISMY: \\
+\newline
+\begin{lstlisting}[caption={RNN vs MLP with 200 epochs and 20 crossvalidation steps output:}]
+RNN is significantly better than MLP
+RNN avg err = 0.567300724638, 
+MLP avg err = 0.600966183575
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.4]{../results/rnn_vs_mlp_200iters_20cross}
+\caption{Features importance}
+\label{ref:rnn}
+\end{figure} 
 
 TUTAJ TRZEBA POZBIERAC NASZE OSTATECZNE WYNIKI, CO NAM WYSZLO, NASZE WYKRESY
 

@@ -29,7 +29,7 @@ def fs():
 
 def rrn_iter_error(iters=200):
 
-    input_length = 50
+    input_length = 100
     hidden_cnt = 100
     data = get_test_data(input_length)
 
@@ -152,17 +152,19 @@ def mlp_iter_error(iters=500):
 
 
 def main():
-    input_length = 100
-    hidden_cnt = 50
-    cross_validation_passes = 4
+    input_length = 25
+    hidden_cnt = 100
+    cross_validation_passes = 20
+    epochs = 200
     data = get_test_data(input_length)
     
     print("----------------------------------------------------------------------")
     print("TRAIN RNN")
     print("----------------------------------------------------------------------")
- 
+
     rnn_nn = nn.NeuralNetwork(rnn.RNN(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]))
     rnn_data = data
+    rnn_nn.nb_epoch = epochs
     rnn_errors_train, rnn_errors_tst = rnn_nn.run_with_cross_validation(rnn_data, cross_validation_passes)
  
     print("----------------------------------------------------------------------")
@@ -177,6 +179,7 @@ def main():
 
     mlp_nn = nn.NeuralNetwork(perceptron.MLP(input_length, hidden_cnt, data.x.shape[2], data.y.shape[1]))
     mlp_data = data
+    mlp_nn.nb_epoch = epochs
     mlp_errors_train, mlp_errors_tst = mlp_nn.run_with_cross_validation(mlp_data, cross_validation_passes)
 
     print("----------------------------------------------------------------------")
