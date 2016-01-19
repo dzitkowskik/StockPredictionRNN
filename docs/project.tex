@@ -87,7 +87,7 @@
 \begin{abstract}
 
 The Recurrent Neural Network (RNN) is an extremely powerful model for problems in machine learning that require identifying complex dependencies between temporally distant inputs. It is often used in solving NLP problems, therefore it can be suitable also for stock market prediction. 
-In this work I will try to use recurrent neural network with long short term memory to predict prices in high frequency stock exchange. This paper will show results of implementing such a solution on data from NYSE OpenBook history which allows to recreate the limit order book for any given time.
+In this workwe will try to use recurrent neural network with long short term memory to predict prices in high frequency stock exchange. This paper will show results of implementing such a solution on data from NYSE OpenBook history which allows to recreate the limit order book for any given time.
 
 \end{abstract}
 
@@ -99,11 +99,11 @@ In this work I will try to use recurrent neural network with long short term mem
 
 \section{Introduction}
 
-\lettrine[nindent=0em,lines=3]{L} ong Short Memory RNN architecture has been proved to be suprisingly successive in sequence prediction
-resolving a problem with vanishing and exploding gradients. In this work I will use Hochreiter \& Schmidhuber (1997) version of LSTM layer. 
+\lettrine[nindent=0em,lines=3]{L} ong Short Memory RNN architecture has been proved to be suprisingly successful in sequence prediction
+resolving a problem with vanishing and exploding gradients. In this work we will use Hochreiter \& Schmidhuber (1997) version of LSTM layer. 
 The Long Short-Term Memory (LSTM) is a specific RNN architecture whose design makes it much easier to train. While wildly successful in practice, the LSTM's architecture appears to be ad-hoc so it is not clear if it is optimal, and the significance of its individual components is unclear - which was checked by Google in [1]. The aim of this work is to see if the solution will be suitable for predicting prices in stock markets, which are one of the most difficult time series to predict.
 Basing on time series data from NYSE OpenBook (which includes every ask and bid prices for one day)
-I will try to predict next bid or ask value. If there exist any long or short term dependency with historical data, my LSTM model should outperform
+we will try to predict next bid or ask value. If there exist any long or short term dependency with historical data, my LSTM model should outperform
 basic perceptron which will be used for comparison. I will also check if changing LSTM model to GRU (Gated Recurrent Unit - Cho et al. 2014.) will
 decrease an error rate to establish which solution is best.
 All technical implementation will be done in Python using Keras [2] library based on Theano. For performance reasons most computations will be done on GPU using NVIDIA CUDA 7.5 technology. 
@@ -171,11 +171,11 @@ Side & Char(1) \\
 \end{tabular}
 \end{table}
 
-For me the most important are price, volume na side data, because I will use them 
+For us the most important are price, volume na side data, because we will use them 
 among others as an input to the network. Network will be always trained only for one symbol 
-and for events of submission. I am going to experiment with different inputs,
-probably using some feature extraction, or choosing custom subset of features by myself.
-Inputs I am going to consider are:
+and for events of submission. We are going to experiment with different inputs,
+probably using some feature extraction, or choosing custom subset of features by ourselves.
+Inputs we are going to consider are:
 
 \begin{itemize}
 \item Time - Time since last ask or bid
@@ -191,7 +191,7 @@ Number of nodes in the hidden layer in that \emph(testing) perceptron will be op
 to maximize its performance. The problem we want to solve is classification - we want to estimate
 if a price (of ask or bid) will be lower, higher or the same in the next transaction. \\
 \newline
-For the estimation of performance of my neural networks I will use a mean error loss function: \\
+For the estimation of performance of my neural networks we will use a mean error loss function: \\
 \newline
 \begin{center}
 $ err(t) = \frac{\sum\limits_{i=1}^t (y_{i} \neq Y_{i})}{t - 1} $
@@ -235,7 +235,7 @@ The problem that occurred during test phase turned out to be originating with da
 As the response value for our vector of features we have choosen indicator wheter the transaction price for a given stock has dropped, stayed the same or risen. This results in response variable being mainly dominated by the second case, because transactions on NYSE OpenBook occur much less often than we initialy expected, making below around 10 percent of overall entries.
 Above leads to the poor learning performance of the neural networks. It is just easier for them to assume no transaction price change since it is the correct choice most of the time.
 
-\section{Revieved solution}
+\section{Reviewed solution}
 
 Because we did not get satisfactory results, we had to change our solution in case of features and
 balance of classes in our data. Ultimately we got balanced data and many more features, and better results.
@@ -243,16 +243,26 @@ Below we exmplain detailed final solution:
 
 \subsection{Data set}
 
-TUTAJ OPISZ JAK BALANSUJESZ DANE - ZE ROBISZ UNDERSAMPLING - OPISZ TEN ALGORYTM TROCHE MOZE?
-
-\subsection{Features and output}
+As message book in it's raw form yields little indication of transaction price changes there is need to convert it into more structured form. The representative structure  that represents prices and volumes on both buyers and sellers side is called order book.
+Each event from the message book regarding analyzed stock symbol is compared with existing order book records. These are grouped into two lists: bid side and ask side. The bid side is sorted descending by price and at each price level contains the accumulated volume information. The ask side is sorted ascending by price and at each price level contains the accumulated volume information. Whether it is buy or sell order it is checked if the price allows for a transaction to take place. If so the current transaction price is updated while previous transaction price still being held for comparison. Otherwise this message is added to appropriate record in order book with matching price (total volume is incremented).
 
 TUTAJ OPISZ JAK TWORZYSZ ORDER BOOKA I JAKIE FEATURES Z NIEGO BIERZESZ
 ROWNIEZ OPISZ JAKIE TERAZ MAMY KLASY CZYLI CO ZNACZA - CZYLI JAK ZMIENIL SIE OUTPUT, CZYM JEST TEN PRICE
 NASTEPNIE NAPISZ JAK ZALEZY ILOSC FEATURES OD LEVEL I ZE MOZNA GO USTAWIAC
 
+TUTAJ OPISZ JAK BALANSUJESZ DANE - ZE ROBISZ UNDERSAMPLING - OPISZ TEN ALGORYTM TROCHE MOZE?
+
+\subsection{Features and output}
+We identify a collection of proposed attributes that are divided into two categories: basic and time-insensitive, all of which can be directly computed from the data. Attributes in the basic set (v1) are the prices and volumes at both ask and bid sides up to n different levels (that is, price levels in the order book at a given moment), which can be directly fetched from the order book. Attributes in the time-insensitive set are easily computed from the basic set at a single point in time. Of this, bid-ask spread and mid-price, price ranges, as well as average price and volume at different price levels are calculated in feature sets v2, v3, and v4, respectively; while v5 is designed to track the accumulated differences of price and volume between ask and bid sides.
+
+With each new message arriving to the order book the history of features and output is appended with new set of those.
+The response variable is a category number indicating whether the transaction price for a given stock has dropped, stayed the same or risen in the next moment.
+
 NAPISZ ZE UZYWALISMY FEATURE SELECTION ALE WYSZLO NAM ZE WSZYSTKIE SA TAK SAMO WAZNE PRAWIE I TUTAJ JAKO
 GLUPI DOWOD DAMY TEN WYKRESIK:
+
+As the number of features rises with incremented level we considered that it may be beneficial for computation time to select features which are most important. If a number of them would stand out in terms of effect on accuracy then it would be wise to choose thiem as a best subset for training.
+To evaluate this aspect we used mentioned feature selection algorithm. For this the initial feature set based on level equal to 3 was determined to 30. As it turned out there is no significant difference in impact of features on accuracy which is shown on the barplot below. Therefore we decided to conduct the fiinal evaluation on all initial features.
 
 \begin{figure}[H]
 \centering
@@ -261,9 +271,12 @@ GLUPI DOWOD DAMY TEN WYKRESIK:
 \label{ref:rnn}
 \end{figure} 
 
+\subsection{Input and output form}
+Each training record passed to neural network consists of n consecutive records from order book history. Each of this records consists of all feature values and response variable.
+
 \subsection{Networks}
-At the end we resigned from using GRU network and instead focus on LSTM comparing it to ordinary MLP.
-In learning we used Stochastic gradient descent optimizer with categorical crossentropy loss function.
+At the end we resigned from using GRU network and instead focused on LSTM, comparing it to ordinary MLP.
+For learning we used Stochastic gradient descent optimizer with categorical crossentropy loss function.
 Below we present actual models of networks used:
 \begin{lstlisting}[language=Python, frame=single, basicstyle=\tiny]
 PERCEPTRON:
@@ -289,7 +302,7 @@ model.add(Dense(self.output_dim, activation='softmax'))
 \end{lstlisting}
 
 \subsection{GPU usage}
-Because of the fact that our NN are learning slowly, and teaching them is time consuming we found
+Because of the fact that our NN are learning slowly and teaching them is time consuming we found
 useful to switch on BLAS and CUDA enabled devices usage by Theano library. To do that it was sufficient to
 create a file ~/.theanorc with content: \\
 \begin{lstlisting}
@@ -308,14 +321,12 @@ Using that new architecture and solution we received our final results.
 
 \section{Final Results}
 
-NAJPIERW MOWISZ NA JAKICH DANYCH OSIAGNELISMY TAKIE WYNIKI:
-
-WSZYSTKIE WYNIKI ZOSTALY WYGENEROWANE UZYWAJAC DANYCH SYMBOLU AIG ANALIZUJAC 2M REKORDOW \\
+As the test data we have chosen AIG order book generated by analysing 2 milion records from NYSE OpenBook. This yielded in balanced test data set in size of ~33k.
 \newline
-33120 REKORDOW W TYM: \\
+33120 Total records including: \\
 11040.0 records with price down \\
 11040.0 records with price stable \\
-11040.0 records with price down \\
+11040.0 records with price up \\
 
 A POTEM CO DOSTALISMY: \\
 \newline
