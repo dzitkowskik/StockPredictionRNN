@@ -206,7 +206,7 @@ layer types including LSTM in the version described above as well as GRU. Since 
 Theano under the hood it is possible to swich on GPU usage, involving that time consuming 
 computations will be executed on my NVIDIA graphic card using CUDA technology.
 
-\subsection{Test data providing}
+\subsection{Test data source}
 As a basic data that our program operates on we have chosen a NYSE OpenBook Ultra data set from 03/04/2013. The data for given stock symbol is parsed from large binary file and can be conveniently saved to the database and/or file. Then this message book is transformed into an order book message by message to capture the transaction price changes in each moment of time, as well as the history of other stock parameters for further building of the features.
 
 \subsection{Algorithms}
@@ -238,31 +238,31 @@ Above leads to the poor learning performance of the neural networks. It is just 
 \section{Reviewed solution}
 
 Because we did not get satisfactory results, we had to change our solution in case of features and
-balance of classes in our data. Ultimately we got balanced data and many more features, and better results.
-Below we exmplain detailed final solution:
+balance of classes in our data. Ultimately we got balanced data and many more features which led to more reliable results.
+Below we explain detailed final solution:
 
 \subsection{Data set}
 
-As message book in it's raw form yields little indication of transaction price changes there is need to convert it into more structured form. The representative structure  that represents prices and volumes on both buyers and sellers side is called order book.
+As message book in it's raw form yields little indication of transaction price changes there is need to convert it into more structured form. The representative structure  that groups prices and volumes on both buyers and sellers side is called order book.
 Each event from the message book regarding analyzed stock symbol is compared with existing order book records. These are grouped into two lists: bid side and ask side. The bid side is sorted descending by price and at each price level contains the accumulated volume information. The ask side is sorted ascending by price and at each price level contains the accumulated volume information. Whether it is buy or sell order it is checked if the price allows for a transaction to take place. If so the current transaction price is updated while previous transaction price still being held for comparison. Otherwise this message is added to appropriate record in order book with matching price (total volume is incremented).
 
-TUTAJ OPISZ JAK TWORZYSZ ORDER BOOKA I JAKIE FEATURES Z NIEGO BIERZESZ
-ROWNIEZ OPISZ JAKIE TERAZ MAMY KLASY CZYLI CO ZNACZA - CZYLI JAK ZMIENIL SIE OUTPUT, CZYM JEST TEN PRICE
-NASTEPNIE NAPISZ JAK ZALEZY ILOSC FEATURES OD LEVEL I ZE MOZNA GO USTAWIAC
-
-TUTAJ OPISZ JAK BALANSUJESZ DANE - ZE ROBISZ UNDERSAMPLING - OPISZ TEN ALGORYTM TROCHE MOZE?
-
-\subsection{Features and output}
-We identify a collection of proposed attributes that are divided into two categories: basic and time-insensitive, all of which can be directly computed from the data. Attributes in the basic set (v1) are the prices and volumes at both ask and bid sides up to n different levels (that is, price levels in the order book at a given moment), which can be directly fetched from the order book. Attributes in the time-insensitive set are easily computed from the basic set at a single point in time. Of this, bid-ask spread and mid-price, price ranges, as well as average price and volume at different price levels are calculated in feature sets v2, v3, and v4, respectively; while v5 is designed to track the accumulated differences of price and volume between ask and bid sides.
+\subsection{Features and response class}
+We identify a collection of proposed attributes that are divided into two categories: basic and time-insensitive, all of which can be directly computed from the data. Attributes in the basic set (v1 in the Figure 3) are the prices and volumes at both ask and bid sides up to n different levels (that is, price levels in the order book at a given moment), which can be directly fetched from the order book. Attributes in the time-insensitive set are easily computed from the basic set at a single point in time. Of this, bid-ask spread and mid-price, price ranges, as well as average price and volume at different price levels are calculated in feature sets v2, v3, and v4, respectively; while v5 is designed to track the accumulated differences of price and volume between ask and bid sides.
 
 With each new message arriving to the order book the history of features and output is appended with new set of those.
 The response variable is a category number indicating whether the transaction price for a given stock has dropped, stayed the same or risen in the next moment.
 
-NAPISZ ZE UZYWALISMY FEATURE SELECTION ALE WYSZLO NAM ZE WSZYSTKIE SA TAK SAMO WAZNE PRAWIE I TUTAJ JAKO
-GLUPI DOWOD DAMY TEN WYKRESIK:
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.23]{../results/feature_sets}
+\caption{Feature sets}
+\label{ref:rnn}
+\end{figure} 
+
+As depicted in the table above, the level variable controlled by program describes how deep the order book we want features to represent. The higher the level the more distant rows from the cheapest ask and most expensive bid are taken into account. Therefore, overall number of features is result of the formula: 4 * level + 2 * level + 2 * level + 4 + 2.
 
 As the number of features rises with incremented level we considered that it may be beneficial for computation time to select features which are most important. If a number of them would stand out in terms of effect on accuracy then it would be wise to choose thiem as a best subset for training.
-To evaluate this aspect we used mentioned feature selection algorithm. For this the initial feature set based on level equal to 3 was determined to 30. As it turned out there is no significant difference in impact of features on accuracy which is shown on the barplot below. Therefore we decided to conduct the fiinal evaluation on all initial features.
+To evaluate this aspect we used mentioned feature selection algorithm. For this the initial feature set based on level equal to 3 was determined to 30. As it turned out there is no significant difference in impact of features on accuracy which is shown on the barplot below. Therefore we decided to conduct the final evaluation on all initial features.
 
 \begin{figure}[H]
 \centering
@@ -272,8 +272,9 @@ To evaluate this aspect we used mentioned feature selection algorithm. For this 
 \end{figure} 
 
 \subsection{Input and output form}
-Each training record passed to neural network consists of n consecutive records from order book history. Each of this records consists of all feature values and response variable.
-
+Before it is passed to neural network each order book history record consists of n consecutive records from order book history. Each of this records consists of all feature values and response variable.
+This data is passed to the neural networks in the following form: history of feature vector from input length last events (window size) and a single response variable indicating price change after the next event. The neural network recieves batch of these records with it being balanced in terms of response variable classes.
+Balancing the number of NN input records is achieved by taking the class which occurs least frequently, adjusting other class records count to this number and shuffling the combined features history-response class set.
 \subsection{Networks}
 At the end we resigned from using GRU network and instead focused on LSTM, comparing it to ordinary MLP.
 For learning we used Stochastic gradient descent optimizer with categorical crossentropy loss function.
@@ -320,34 +321,93 @@ fastmath = True
 Using that new architecture and solution we received our final results.
 
 \section{Final Results}
+The program allows tuning of following parameters: number of iterations, features level, input length (window size), hidden layer neurons count.
+Based on adjusting these parameters series of test runs were executed.
 
-As the test data we have chosen AIG order book generated by analysing 2 milion records from NYSE OpenBook. This yielded in balanced test data set in size of ~33k.
+As the test data we have chosen AIG order book generated by analysing 2 milion records from NYSE OpenBook. This yielded a balanced test data set in size of ~33k.
 \newline
 33120 Total records including: \\
 11040.0 records with price down \\
 11040.0 records with price stable \\
 11040.0 records with price up \\
-
-A POTEM CO DOSTALISMY: \\
 \newline
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.38]{../results/RNN_200iters_2level_25len_50hidden}
+\caption{RNN - 200 iterations, level = 2, input length = 25, 50 neurons}
+\label{ref:rnn}
+\end{figure}
+In the plot above the train error oscillates between 0.55 and 0.57. The test error oscillates around 0.58 and 0.56.
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.38]{../results/RNN_200iters_6level_25len_50hidden}
+\caption{RNN - 200 iterations, level = 6, input length = 25, 50 neurons}
+\label{ref:rnn}
+\end{figure}
+In the plot above there are large oscillations for both train and test error, which range basically from 0.57 to 0.63.
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.38]{../results/RNN_500iters_3level_50len_100hidden}
+\caption{RNN - 500 iterations, level = 3, input length = 50, 100 neurons}
+\label{ref:rnn}
+\end{figure}
+In the plot above there are large oscillations for both train and test error, which range basically from 0.56 to 0.60.
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.38]{../results/RNN_200iters_4level_100len_100hidden}
+\caption{RNN - 200 iterations, level = 4, input length = 100, 100 neurons}
+\label{ref:rnn}
+\end{figure}
+In the plot above there are large oscillations for both train and test error, which range basically from 0.56 to 0.61.
+\begin{figure}[H]
+\centering
+
+Tuning of paramaters showed in the following to be the most productive for our final comparison of RNN:
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.27]{../results/RNN_200iters_4level_25len_50hidden}
+\caption{RNN - 200 iterations, level = 4, input length = 25, 50 neurons}
+\label{ref:rnn}
+\end{figure}
+With train error going as down as 0.53 and quite stable test error 0.56, this is the best neural network configuration we have found so far.
+So we decided to compare it with MLP using the same parameters.
+\includegraphics[scale=0.29]{../results/MLP_200iters_4level_25len_50hidden}
+\caption{MLP - 200 iterations, level = 4, input length = 25, 50 neurons}
+\label{ref:rnn}
+\end{figure}
+In the plot above created for MLP there are large oscillations for both train and test error, which range basically from 0.59 to 0.63.
+
+Based on this runs the boxplot was created to show how statistically different error rates of these two neural networks are.
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.4]{../results/rnn_vs_mlp_200iters_20cross}
+\caption{Error rate boxplot}
+\label{ref:rnn}
+\end{figure}
+The boxplot confirms that there is distinguishable difference in favor of RNN.
 \begin{lstlisting}[caption={RNN vs MLP with 200 epochs and 20 crossvalidation steps output:}]
 RNN is significantly better than MLP
 RNN avg err = 0.567300724638, 
 MLP avg err = 0.600966183575
 \end{lstlisting}
 
-\begin{figure}[H]
-\centering
-\includegraphics[scale=0.4]{../results/rnn_vs_mlp_200iters_20cross}
-\caption{Features importance}
-\label{ref:rnn}
-\end{figure} 
-
-TUTAJ TRZEBA POZBIERAC NASZE OSTATECZNE WYNIKI, CO NAM WYSZLO, NASZE WYKRESY
-
 \section{Conclusion}
 
-KROTKIE PODSUMOWANIE TEGO CZEGO SIE NAUCZYLISMY I CO NAM WYSZLO Z NASZEGO REASERCHU
+The research showed that the RNN with LSTM layer performs better than ordinary MLP. Although the difference is much smaller that was expected from fundamental neural network philosophy that divides these two approches.
+For us the most important value is learning value that results from solution spanning over many topics like:
+\begin{itemize}
+\item Order Book mechanics
+\item RNN LSTM structure and purpose
+\item Python Keras library usage with GPU-accelerated computations
+\item Feature selection algorithm
+\item Crossvalidation algorithm
+\item T-Student significance test
+\item Data set balancing (subsampling)
+\end{itemize}
+Further work on this topic should include experimenting with detail of neural networks parts like optimizers, loss functions, layer types.
+It is worth to further investigate how parameters such as number of iterations, level, input length, neurons count  can be optimize to achieve better overall results for both neural networks types. Other research papers also suggest using mid-price change instead of last completed transaction change as response variable.
 
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST
