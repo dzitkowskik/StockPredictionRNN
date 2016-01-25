@@ -1,12 +1,19 @@
 # StockPredictionRNN
-High Frequency Trading Price Prediction using LSTM Recursive Neural Networks
+High Frequency Trading Price Prediction using LSTM Recursive Neural Networks   
 
-# Harmonogram projektu
-Poszczególne daty są wyszczególnione w harmonogramie:   
+In this project we try to use recurrent neural network with long short term memory 
+to predict prices in high frequency stock exchange. This program implements such a solution 
+on data from NYSE OpenBook history which allows to recreate the limit order book for any given time.
+Everything is described in our paper: [project.pdf](https://github.com/dzitkowskik/StockPredictionRNN/blob/master/docs/project.pdf)
+
+## Project done for course of Computational Intelligence in Business Applications
 http://pages.mini.pw.edu.pl/~stokowiecw/CIBA/slides/lab2.pdf   
-   
-Najważniejsze są:  
-  * 07.01.2016 Early results <- tutaj chciałbym zobaczyć że model działa i jak dobrze)
-  * 13.01.2016 Advanced results <- jest tydzień na dopieszczenie modelu, hiperparametrów, etc.)
-  * 20.01.2016 Second project submission deadline <- Przesyłają Państwo raport z projektu.
-  * 27.01.2016 Second project presentation <- 9 minut prezentacji, 2-3 minuty pytań z widowni.
+
+# Installation and usage
+
+# Data
+
+# License 
+
+
+
