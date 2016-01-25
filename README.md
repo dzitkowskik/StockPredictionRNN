@@ -1,3 +1,5 @@
+[![GitHub license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://raw.githubusercontent.com/dzitkowskik/StockPredictionRNN/master/LICENSE)
+
 # StockPredictionRNN
 High Frequency Trading Price Prediction using LSTM Recursive Neural Networks   
 
