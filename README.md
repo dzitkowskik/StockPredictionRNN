@@ -11,6 +11,12 @@ Everything is described in our paper: [project.pdf](https://github.com/dzitkowsk
 ### Project done for course of Computational Intelligence in Business Applications at Warsaw University of Technology - Department of Mathematics and Computer Science
 http://pages.mini.pw.edu.pl/~stokowiecw/CIBA/slides/lab2.pdf   
 
+# Data
+
+To use this program one has to acquire data first. We need file `openbookultraAA_N20130403_1_of_1` from NYSE.
+It can be downloaded from [NYSE DATA](ftp://ftp.nyxdata.com/Historical%20Data%20Samples/TAQ%20NYSE%20OpenBook/)
+Unzip it and copy to folder `src/nyse-rnn`
+
 # Installation and usage
 
 Program is written in Python 2.7 with usage of library [Keras](http://keras.io) - [installation instruction](http://keras.io/#installation)
@@ -28,12 +34,13 @@ We use numpy, scipy, matplotlib and pymongo in this project so it will be useful
 sudo pip install numpy scipy matplotlib pymongo
 ```
 
-To run the program (creating folder symbols is necessary):
+To run the program first run nyse.py to create symbols and then main.py (creating folder symbols is necessary):
 
 ```bash
 cd StockPredictionRNN
 cd src/nyse-rnn
 mkdir symbols
+python nyse.py
 python main.py
 ```
 
@@ -56,10 +63,6 @@ ldflags = −L/usr/local/lib −lopenblas
 [nvcc]
 fastmath = True
 ```
-
-# Data
-
-
 
 # License 
 
