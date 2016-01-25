@@ -26,7 +26,34 @@ We use numpy, scipy, matplotlib and pymongo in this project so it will be useful
 sudo pip install numpy scipy matplotlib pymongo
 ```
 
+To run the program (creating folder symbols is necessary):
+
+```bash
+cd StockPredictionRNN
+cd src/nyse-rnn
+mkdir symbols
+python main.py
+```
+
 To save data to mongodb one has to install it first [mongo install](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/)
+
+Look into the code, it may be necessary to uncomment some lines to enable different features.
+
+# Performance 
+
+To use CUDA and OpenBlas create file ~/.theanorc and fill it with this content:
+
+```
+[ global ]
+floatX = float32 
+device = gpu1
+
+[ blas ]
+ldflags = −L/usr/local/lib −lopenblas
+
+[nvcc]
+fastmath = True
+```
 
 # Data
 
