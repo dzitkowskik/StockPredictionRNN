@@ -14,8 +14,8 @@ http://pages.mini.pw.edu.pl/~stokowiecw/CIBA/slides/lab2.pdf
 # Data
 
 To use this program one has to acquire data first. We need file `openbookultraAA_N20130403_1_of_1` from NYSE.
-It can be downloaded from [NYSE DATA](ftp://ftp.nyxdata.com/Historical%20Data%20Samples/TAQ%20NYSE%20OpenBook/)
-Unzip it and copy to folder `src/nyse-rnn`
+It can be downloaded from `ftp://ftp.nyxdata.com/Historical%20Data%20Samples/TAQ%20NYSE%20OpenBook/` using FTP.
+Unzip it and copy to folder `src/nyse-rnn`.
 
 # Installation and usage
 
