@@ -9,7 +9,6 @@ on data from NYSE OpenBook history which allows to recreate the limit order book
 Everything is described in our paper: [project.pdf](https://github.com/dzitkowskik/StockPredictionRNN/blob/master/docs/project.pdf)
 
 ### Project done for course of Computational Intelligence in Business Applications at Warsaw University of Technology - Department of Mathematics and Computer Science
-http://pages.mini.pw.edu.pl/~stokowiecw/CIBA/slides/lab2.pdf   
 
 # Data
 
